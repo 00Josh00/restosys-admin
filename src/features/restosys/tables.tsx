@@ -167,6 +167,7 @@ export function TablesPage() {
             void queryClient.invalidateQueries({ queryKey: ['orders'] })
             void queryClient.invalidateQueries({ queryKey: ['restaurant-tables'] })
             void queryClient.invalidateQueries({ queryKey: ['restaurant-tables-active-orders'] })
+            void queryClient.invalidateQueries({ queryKey: ['menu'] })
           }}
           initialTableId={createOrderForTable.id}
         />

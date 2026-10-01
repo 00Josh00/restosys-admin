@@ -373,7 +373,7 @@ export function OrderDialog({
         toast.error('Selecciona una mesa.')
         return
       }
-      const deliveryFee = orderType === 'delivery' ? Number(form.get('delivery_fee') || 0) : 0
+      const deliveryFee = (orderType === 'delivery' && !initialTableId) ? Number(form.get('delivery_fee') || 0) : 0
 
       const { error } = await supabase.rpc('create_order_with_items', {
         p_order: {
@@ -414,21 +414,27 @@ export function OrderDialog({
             ) : (
               <>
                 <FormField label='Tipo de pedido'>
-                  <NativeSelect name='order_type' defaultValue='local'>
+                  <NativeSelect name='order_type' defaultValue={initialTableId ? 'local' : 'local'} disabled={!!initialTableId}>
                     <option value='local'>En local</option>
                     <option value='llevar'>Para llevar</option>
                     <option value='delivery'>Delivery</option>
                   </NativeSelect>
+                  {initialTableId && <input type='hidden' name='order_type' value='local' />}
                 </FormField>
                 <FormField label='Mesa (para pedidos en local)'>
-                  <NativeSelect name='table_id' defaultValue={initialTableId || ''}>
+                  <NativeSelect name='table_id' defaultValue={initialTableId || ''} disabled={!!initialTableId}>
                     <option value=''>Seleccionar mesa</option>
-                    {tables.filter((table) => table.status !== 'ocupada').map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}
+                    {tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}
                   </NativeSelect>
+                  {initialTableId && <input type='hidden' name='table_id' value={initialTableId} />}
                 </FormField>
                 <FormField label='Cliente (opcional)'><TextInput name='customer_name' placeholder='Nombre del cliente' /></FormField>
-                <FormField label='Dirección de delivery'><TextInput name='delivery_address' placeholder='Dirección y referencia' /></FormField>
-                <FormField label='Costo de delivery (S/)'><TextInput name='delivery_fee' type='number' min='0' step='0.5' defaultValue='0' /></FormField>
+                {!initialTableId && (
+                  <>
+                    <FormField label='Dirección de delivery'><TextInput name='delivery_address' placeholder='Dirección y referencia' /></FormField>
+                    <FormField label='Costo de delivery (S/)'><TextInput name='delivery_fee' type='number' min='0' step='0.5' defaultValue='0' /></FormField>
+                  </>
+                )}
               </>
             )}
 
