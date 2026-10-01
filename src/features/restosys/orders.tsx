@@ -8,7 +8,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { supabase } from '@/lib/supabase'
 import { useMenu, type ComboOption, type MenuData, type MenuProduct } from './menu'
-import { EmptyState, errorMessage, FormField, formatDateTime, formatMoney, NativeSelect, PageError, PageLoading, PageShell, TextInput, useUserRole } from './shared'
+import { EmptyState, errorMessage, FormField, formatDateTime, formatMoney, NativeSelect, PageError, PageShell, TextInput, useUserRole } from './shared'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type OrderStatus = 'pendiente' | 'preparacion' | 'listo' | 'entregado' | 'pagado' | 'cancelado'
 type OrderType = 'local' | 'llevar' | 'delivery'
@@ -104,15 +105,51 @@ export function OrdersPage() {
       })
       if (error) throw new Error(error.message)
     },
+    onMutate: async ({ order, status }) => {
+      await queryClient.cancelQueries({ queryKey: ['orders'] })
+      const previousOrders = queryClient.getQueryData<Order[]>(['orders', filter])
+      queryClient.setQueryData<Order[]>(['orders', filter], (old) =>
+        old?.map((o) => (o.id === order.id ? { ...o, status } : o)) ?? []
+      )
+      return { previousOrders }
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previousOrders) {
+        queryClient.setQueryData(['orders', filter], context.previousOrders)
+      }
+      toast.error(errorMessage(error))
+    },
     onSuccess: () => {
       invalidateAll()
       toast.success('Estado del pedido actualizado')
     },
-    onError: (error) => toast.error(errorMessage(error)),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
   })
 
   if (menu.isPending || ordersQuery.isPending || tablesQuery.isPending) {
-    return <PageShell title='Pedidos' description='Seguimiento de pedidos y cobros'><PageLoading /></PageShell>
+    return (
+      <PageShell title='Pedidos' description='Seguimiento de pedidos y cobros'>
+        <div className='grid gap-3'>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className='flex flex-wrap items-center justify-between gap-4 p-4'>
+                <div className='min-w-48 flex-1'>
+                  <Skeleton className='h-4 w-3/4' />
+                  <Skeleton className='h-3 w-1/2 mt-2' />
+                </div>
+                <div className='flex flex-wrap items-center gap-3'>
+                  <Skeleton className='h-8 w-24' />
+                  <Skeleton className='h-8 w-20' />
+                  <Skeleton className='h-8 w-24' />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </PageShell>
+    )
   }
   if (menu.error) return <PageShell title='Pedidos'><PageError message={errorMessage(menu.error)} /></PageShell>
   if (ordersQuery.error) return <PageShell title='Pedidos'><PageError message={errorMessage(ordersQuery.error)} /></PageShell>
@@ -149,14 +186,14 @@ export function OrdersPage() {
                   </div>
                   <div className='flex flex-wrap items-center gap-3'>
                     {canCreate && activeStatuses.includes(order.status) && (
-                      <Button size='sm' variant='secondary' onClick={() => setAppendOrder(order)}><Plus /> Agregar platos</Button>
+                      <Button size='sm' variant='secondary' className='min-h-[44px]' onClick={() => setAppendOrder(order)}><Plus className='size-4' /> Agregar platos</Button>
                     )}
                     <span className='font-semibold'>{formatMoney(order.total)}</span>
                     {role.data === 'cocina' ? (
-                      <span className='rounded-full bg-muted px-3 py-1 text-xs'>{statusLabels[order.status]}</span>
+                      <span className='rounded-full bg-muted px-3 py-1 text-xs min-h-[44px] flex items-center'>{statusLabels[order.status]}</span>
                     ) : transitions.length ? (
                       <NativeSelect
-                        className='w-auto min-w-36'
+                        className='w-auto min-w-36 min-h-[44px]'
                         aria-label={`Estado del pedido ${order.order_number}`}
                         value={order.status}
                         onChange={(event) => updateStatus.mutate({ order, status: event.target.value as OrderStatus })}
@@ -165,7 +202,7 @@ export function OrdersPage() {
                         {transitions.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
                       </NativeSelect>
                     ) : (
-                      <Badge variant='secondary'>{statusLabels[order.status]}</Badge>
+                      <Badge variant='secondary' className='min-h-[44px] flex items-center'>{statusLabels[order.status]}</Badge>
                     )}
                   </div>
                 </CardContent>
@@ -365,7 +402,7 @@ function OrderDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className='max-h-[90dvh] overflow-y-auto sm:max-w-xl'>
+        <DialogContent className='max-h-[90dvh] overflow-y-auto sm:max-w-xl' style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <DialogHeader>
             <DialogTitle>{isAppend ? `Agregar platos · Pedido #${order?.order_number ?? ''}` : 'Crear pedido'}</DialogTitle>
           </DialogHeader>
@@ -442,7 +479,7 @@ function OrderDialog({
 
       {combo && (
         <Dialog open onOpenChange={(next) => !next && setCombo(null)}>
-          <DialogContent className='sm:max-w-md'>
+          <DialogContent className='sm:max-w-md' style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
             <DialogHeader>
               <DialogTitle>{combo.product.combo_slots === 3 ? 'Arma tu trío' : 'Arma tu dúo'} · {combo.product.name}</DialogTitle>
             </DialogHeader>

@@ -9,6 +9,11 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth-store'
+import {
+  formatDateTimeInLima,
+  formatDateInLima,
+  formatTimeInLima,
+} from '@/lib/timezone'
 
 export function PageShell({
   title,
@@ -134,10 +139,15 @@ export function formatMoney(value: number | string | null | undefined) {
 }
 
 export function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat('es-PE', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value))
+  return formatDateTimeInLima(value)
+}
+
+export function formatDate(value: string) {
+  return formatDateInLima(value)
+}
+
+export function formatTime(value: string) {
+  return formatTimeInLima(value)
 }
 
 export function errorMessage(error: unknown) {
@@ -163,7 +173,7 @@ export function TextInput(props: React.ComponentProps<'input'>) {
   return (
     <input
       {...props}
-      className={`h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${props.className ?? ''}`}
+      className={`h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none transition focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] ${props.className ?? ''}`}
     />
   )
 }
@@ -172,7 +182,7 @@ export function NativeSelect(props: React.ComponentProps<'select'>) {
   return (
     <select
       {...props}
-      className={`h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring ${props.className ?? ''}`}
+      className={`h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] ${props.className ?? ''}`}
     />
   )
 }

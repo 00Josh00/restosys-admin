@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { AuthenticatedLayout } from '@/components/layout/authenticated-layout'
 import { supabase } from '@/lib/supabase'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async ({ location }) => {
@@ -15,5 +16,9 @@ export const Route = createFileRoute('/_authenticated')({
       })
     }
   },
-  component: AuthenticatedLayout,
+  component: () => (
+    <ErrorBoundary>
+      <AuthenticatedLayout />
+    </ErrorBoundary>
+  ),
 })
