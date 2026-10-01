@@ -18,7 +18,7 @@ describe('PasswordInput', () => {
     )
 
     const passwordInput = getByPlaceholder('password')
-    const showPasswordButton = getByRole('button', { name: /show password/i })
+    const showPasswordButton = getByRole('button', { name: /mostrar contraseña/i })
 
     await expect.element(passwordInput).toBeInTheDocument()
     await expect.element(passwordInput).toHaveAttribute('type', 'password')
@@ -31,7 +31,7 @@ describe('PasswordInput', () => {
     )
 
     const passwordInput = getByPlaceholder('password')
-    const showPasswordButton = getByRole('button', { name: /show password/i })
+    const showPasswordButton = getByRole('button', { name: /mostrar contraseña/i })
 
     await expect.element(passwordInput).toHaveAttribute('type', 'password')
     await expect.element(showPasswordButton).toBeInTheDocument()
@@ -39,14 +39,14 @@ describe('PasswordInput', () => {
     await userEvent.click(showPasswordButton)
 
     await expect.element(passwordInput).toHaveAttribute('type', 'text')
-    const hidePasswordButton = getByRole('button', { name: /hide password/i })
+    const hidePasswordButton = getByRole('button', { name: /ocultar contraseña/i })
     await expect.element(hidePasswordButton).toBeInTheDocument()
 
     await userEvent.click(hidePasswordButton)
 
     await expect.element(passwordInput).toHaveAttribute('type', 'password')
     await expect
-      .element(getByRole('button', { name: /show password/i }))
+      .element(getByRole('button', { name: /mostrar contraseña/i }))
       .toBeInTheDocument()
   })
 
@@ -56,7 +56,7 @@ describe('PasswordInput', () => {
     )
 
     const passwordInput = getByPlaceholder('password')
-    const showPasswordButton = getByRole('button', { name: /show password/i })
+    const showPasswordButton = getByRole('button', { name: /mostrar contraseña/i })
     await expect.element(showPasswordButton).toBeDisabled()
     await expect.element(passwordInput).toBeDisabled()
   })
