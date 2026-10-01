@@ -1,119 +1,94 @@
-# Shadcn Admin Dashboard
+# RestoSys Admin
 
-Admin Dashboard UI crafted with Shadcn and Vite. Built with responsiveness and accessibility in mind.
+Panel de gestión para cevicherías y restaurantes, construido con **Vite + React + shadcn/ui** y conectado a **Supabase** (Postgres, Auth, RLS, Realtime). Es un front **independiente** del app Next.js de `restosys`, pero usa la **misma base de datos**.
 
-![alt text](public/images/shadcn-admin.png)
+Pensado para usarse **desde el celular**: mobile-first, PWA (instalable) e interfaz en español.
 
-[![Sponsored by Clerk](https://img.shields.io/badge/Sponsored%20by-Clerk-5b6ee1?logo=clerk)](https://go.clerk.com/GttUAaK)
+## Stack
 
-I've been creating dashboard UIs at work and for my personal projects. I always wanted to make a reusable collection of dashboard UI for future projects; and here it is now. While I've created a few custom components, some of the code is directly adapted from ShadcnUI examples.
+- **UI:** [shadcn/ui](https://ui.shadcn.com) (Tailwind CSS v4 + Radix UI)
+- **Build:** [Vite](https://vitejs.dev/)
+- **Rutas:** [TanStack Router](https://tanstack.com/router/latest)
+- **Data fetching:** [TanStack Query](https://tanstack.com/query/latest)
+- **Backend/BD:** [Supabase](https://supabase.com) (Auth + Postgres + RLS + Realtime)
+- **Formularios:** react-hook-form + Zod
+- **Íconos:** Lucide
+- **PWA:** manifest + service worker propios
 
-> This is not a starter project (template) though. I'll probably make one in the future.
+## Módulos
 
-## Features
+- **Panel** — ventas cobradas, pedidos abiertos, mesas ocupadas y gastos del día.
+- **Catálogo** — productos por categoría, precios y disponibilidad (admin).
+- **Mesas** — estado del salón en tiempo real.
+- **Pedidos** — crear pedidos (local/llevar/delivery), cambio de estado y cobro.
+- **Cocina** — cola KDS en realtime (pendiente → preparación → listo).
+- **Gastos** — salidas de caja por fecha.
+- **Inventario** — insumos, stock mínimo y movimientos (entrada/salida/ajuste).
+- **Reportes** — ventas por día/tipo, top platos y balance (solo admin).
+- **Equipo** — gestión de usuarios y roles (admin/mesero/cocina).
 
-- Light/dark mode
-- Responsive
-- Accessible
-- With built-in Sidebar component
-- Global search command
-- 10+ pages
-- Extra custom components
-- RTL support
+## Requisitos
 
-<details>
-<summary>Customized Components (click to expand)</summary>
+- Node 18+ y pnpm
+- Un proyecto de Supabase
 
-This project uses Shadcn UI components, but some have been slightly modified for better RTL (Right-to-Left) support and other improvements. These customized components differ from the original Shadcn UI versions.
+## Variables de entorno
 
-If you want to update components using the Shadcn CLI (e.g., `npx shadcn@latest add <component>`), it's generally safe for non-customized components. For the listed customized ones, you may need to manually merge changes to preserve the project's modifications and avoid overwriting RTL support or other updates.
-
-> If you don't require RTL support, you can safely update the 'RTL Updated Components' via the Shadcn CLI, as these changes are primarily for RTL compatibility. The 'Modified Components' may have other customizations to consider.
-
-### Modified Components
-
-- scroll-area
-- sonner
-- separator
-
-### RTL Updated Components
-
-- alert-dialog
-- calendar
-- command
-- dialog
-- dropdown-menu
-- select
-- table
-- sheet
-- sidebar
-- switch
-
-**Notes:**
-
-- **Modified Components**: These have general updates, potentially including RTL adjustments.
-- **RTL Updated Components**: These have specific changes for RTL language support (e.g., layout, positioning).
-- For implementation details, check the source files in `src/components/ui/`.
-- All other Shadcn UI components in the project are standard and can be safely updated via the CLI.
-
-</details>
-
-## Tech Stack
-
-**UI:** [ShadcnUI](https://ui.shadcn.com) (TailwindCSS + RadixUI)
-
-**Build Tool:** [Vite](https://vitejs.dev/)
-
-**Routing:** [TanStack Router](https://tanstack.com/router/latest)
-
-**Type Checking:** [TypeScript](https://www.typescriptlang.org/)
-
-**Linting/Formatting:** [ESLint](https://eslint.org/) & [Prettier](https://prettier.io/)
-
-**Icons:** [Lucide Icons](https://lucide.dev/icons/), [Tabler Icons](https://tabler.io/icons) (Brand icons only)
-
-**Auth (partial):** [Clerk](https://go.clerk.com/GttUAaK)
-
-## Run Locally
-
-Clone the project
+Copia `.env.example` como `.env.local` y completa:
 
 ```bash
-  git clone https://github.com/satnaing/shadcn-admin.git
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-publishable-key
 ```
 
-Go to the project directory
+## Correr local
 
 ```bash
-  cd shadcn-admin
+pnpm install
+pnpm dev        # http://localhost:5173
 ```
 
-Install dependencies
+Para probar en el celular (misma red):
 
 ```bash
-  pnpm install
+pnpm dev --host
 ```
 
-Start the server
+## Scripts
 
 ```bash
-  pnpm run dev
+pnpm dev        # desarrollo
+pnpm build      # typecheck + build de producción (output: dist/)
+pnpm preview    # sirve el build
+pnpm lint       # eslint
 ```
 
-## Sponsoring this project ❤️
+## Estructura
 
-If you find this project helpful or use this in your own work, consider [sponsoring me](https://github.com/sponsors/satnaing) to support development and maintenance. You can [buy me a coffee](https://buymeacoffee.com/satnaing) as well. Don’t worry, every penny helps. Thank you! 🙏
+```
+src/
+  components/     # UI (shadcn), layout, mobile-nav
+  features/
+    auth/         # login, registro, recuperación (Supabase Auth)
+    restosys/     # módulos del negocio (panel, catálogo, pedidos, etc.)
+    settings/     # ajustes de la cuenta
+  lib/            # cliente de Supabase, utilidades
+  stores/         # estado de sesión (zustand)
+public/
+  manifest.webmanifest
+  sw.js
+  icons/
+```
 
-For questions or sponsorship inquiries, feel free to reach out at [satnaingdev@gmail.com](mailto:satnaingdev@gmail.com).
+## Despliegue en Vercel
 
-### Current Sponsor
+1. Importa el repo en Vercel.
+2. **Framework Preset:** Vite.
+3. **Build Command:** `pnpm build` · **Output Directory:** `dist`.
+4. Agrega las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
 
-- [Clerk](https://go.clerk.com/GttUAaK) - authentication and user management for the modern web
+## Notas
 
-## Author
-
-Crafted with 🤍 by [@satnaing](https://github.com/satnaing)
-
-## License
-
-Licensed under the [MIT License](https://choosealicense.com/licenses/mit/)
+- La seguridad depende de **RLS** en Supabase; el frontend no es la barrera.
+- El alta de usuarios se hace desde el **Supabase Dashboard** (Authentication → Users); luego se asigna el rol en **Equipo**.
+- Licencia MIT.
