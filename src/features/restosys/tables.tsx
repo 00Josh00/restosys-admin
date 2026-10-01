@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { supabase } from '@/lib/supabase'
 import { errorMessage, FormField, formatMoney, PageError, PageLoading, PageShell, TextInput, useUserRole } from './shared'
+import { OrderDialog } from './orders'
 
 type RestaurantTable = { id: string; name: string; capacity: number; status: 'libre' | 'ocupada' | 'reservada' }
 type ActiveOrder = { id: string; order_number: number; total: number; table_id: string }
@@ -17,6 +18,7 @@ export function TablesPage() {
   const queryClient = useQueryClient()
   const role = useUserRole()
   const [open, setOpen] = useState(false)
+  const [createOrderForTable, setCreateOrderForTable] = useState<RestaurantTable | null>(null)
 
   const tablesQuery = useQuery({
     queryKey: ['restaurant-tables'],
@@ -122,14 +124,22 @@ export function TablesPage() {
             const order = orderByTable.get(table.id)
             const free = !order
             return (
-              <Card key={table.id} className='overflow-hidden'>
+              <Card 
+                key={table.id} 
+                className={`overflow-hidden transition-all cursor-pointer hover:shadow-md active:scale-[0.99] ${free ? 'hover:border-emerald-500/50' : 'hover:border-rose-500/50'}`}
+                onClick={() => {
+                  if (role.data === 'admin' || role.data === 'mesero') {
+                    setCreateOrderForTable(table)
+                  }
+                }}
+              >
                 <CardHeader className='flex flex-row items-start justify-between space-y-0 pb-3'>
                   <div>
                     <CardTitle className='text-lg'>{table.name}</CardTitle>
                     <p className='mt-1 flex items-center gap-1 text-sm text-muted-foreground'><UsersRound className='size-4' /> {table.capacity} personas</p>
                   </div>
                   {role.data === 'admin' && (
-                    <Button variant='ghost' size='icon' aria-label={`Eliminar ${table.name}`} onClick={() => void removeTable(table)}><Trash2 className='size-4' /></Button>
+                    <Button variant='ghost' size='icon' aria-label={`Eliminar ${table.name}`} onClick={(e) => { e.stopPropagation(); void removeTable(table) }}><Trash2 className='size-4' /></Button>
                   )}
                 </CardHeader>
                 <CardContent className='space-y-2'>
@@ -144,6 +154,22 @@ export function TablesPage() {
             )
           })}
         </div>
+      )}
+      {createOrderForTable && (
+        <OrderDialog
+          key={createOrderForTable.id}
+          open={Boolean(createOrderForTable)}
+          onOpenChange={(open: boolean) => !open && setCreateOrderForTable(null)}
+          mode='create'
+          menu={{ products: [], categories: [], comboOptions: [] }}
+          tables={tablesQuery.data ?? []}
+          onDone={() => {
+            void queryClient.invalidateQueries({ queryKey: ['orders'] })
+            void queryClient.invalidateQueries({ queryKey: ['restaurant-tables'] })
+            void queryClient.invalidateQueries({ queryKey: ['restaurant-tables-active-orders'] })
+          }}
+          initialTableId={createOrderForTable.id}
+        />
       )}
     </PageShell>
   )

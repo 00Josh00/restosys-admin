@@ -252,7 +252,7 @@ function buildComboChoices(comboOptions: ComboOption[], products: MenuProduct[])
   return map
 }
 
-function OrderDialog({
+export function OrderDialog({
   open,
   onOpenChange,
   mode,
@@ -260,6 +260,7 @@ function OrderDialog({
   menu,
   tables,
   onDone,
+  initialTableId,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -268,6 +269,7 @@ function OrderDialog({
   menu: MenuData
   tables: Table[]
   onDone: () => void
+  initialTableId?: string
 }) {
   const [lines, setLines] = useState<CartLine[]>([])
   const [combo, setCombo] = useState<{ product: MenuProduct; editingKey: string | null; selection: string[] } | null>(null)
@@ -419,7 +421,7 @@ function OrderDialog({
                   </NativeSelect>
                 </FormField>
                 <FormField label='Mesa (para pedidos en local)'>
-                  <NativeSelect name='table_id' defaultValue=''>
+                  <NativeSelect name='table_id' defaultValue={initialTableId || ''}>
                     <option value=''>Seleccionar mesa</option>
                     {tables.filter((table) => table.status !== 'ocupada').map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}
                   </NativeSelect>
