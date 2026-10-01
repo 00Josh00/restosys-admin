@@ -6,7 +6,7 @@ import { UserAuthForm } from './user-auth-form'
 const FORM_MESSAGES = {
   emailEmpty: 'Ingresa tu correo.',
   passwordEmpty: 'Ingresa tu contraseña.',
-  passwordShort: 'La contraseña debe tener al menos 7 caracteres.',
+  passwordShort: 'La contraseña debe tener al menos 6 caracteres.',
 } as const
 
 const navigate = vi.fn()
