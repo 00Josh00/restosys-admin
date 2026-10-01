@@ -17,7 +17,9 @@ export function SignIn() {
     <AuthLayout>
       <Card className='max-w-sm gap-4'>
         <CardHeader>
-          <CardTitle className='text-lg tracking-tight'>Iniciar sesión</CardTitle>
+          <CardTitle className='text-lg tracking-tight'>
+            Iniciar sesión
+          </CardTitle>
           <CardDescription>
             Ingresa tu correo y contraseña para entrar{' '}
             <br className='max-sm:hidden' /> al sistema. ¿No tienes cuenta?{' '}

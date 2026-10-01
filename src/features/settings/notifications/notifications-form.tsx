@@ -94,7 +94,9 @@ export function NotificationsForm() {
           )}
         />
         <div className='relative'>
-          <h3 className='mb-4 text-lg font-medium'>Notificaciones por correo</h3>
+          <h3 className='mb-4 text-lg font-medium'>
+            Notificaciones por correo
+          </h3>
           <div className='space-y-4'>
             <FormField
               control={form.control}
@@ -146,9 +148,12 @@ export function NotificationsForm() {
               render={({ field }) => (
                 <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
                   <div className='space-y-0.5'>
-                    <FormLabel className='text-base'>Correos sociales</FormLabel>
+                    <FormLabel className='text-base'>
+                      Correos sociales
+                    </FormLabel>
                     <FormDescription>
-                      Recibe correos de solicitudes de amistad, seguidores y más.
+                      Recibe correos de solicitudes de amistad, seguidores y
+                      más.
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -166,9 +171,12 @@ export function NotificationsForm() {
               render={({ field }) => (
                 <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
                   <div className='space-y-0.5'>
-                    <FormLabel className='text-base'>Correos de seguridad</FormLabel>
+                    <FormLabel className='text-base'>
+                      Correos de seguridad
+                    </FormLabel>
                     <FormDescription>
-                      Recibe correos sobre la actividad y seguridad de tu cuenta.
+                      Recibe correos sobre la actividad y seguridad de tu
+                      cuenta.
                     </FormDescription>
                   </div>
                   <FormControl>

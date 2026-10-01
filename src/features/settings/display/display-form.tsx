@@ -74,7 +74,8 @@ export function DisplayForm() {
               <div className='mb-4'>
                 <FormLabel className='text-base'>Barra lateral</FormLabel>
                 <FormDescription>
-                  Selecciona los elementos que quieres mostrar en la barra lateral.
+                  Selecciona los elementos que quieres mostrar en la barra
+                  lateral.
                 </FormDescription>
               </div>
               {items.map((item) => (

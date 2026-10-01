@@ -17,7 +17,9 @@ export function ForbiddenError() {
           <Button variant='outline' onClick={() => history.go(-1)}>
             Volver
           </Button>
-          <Button onClick={() => navigate({ to: '/' })}>Volver al inicio</Button>
+          <Button onClick={() => navigate({ to: '/' })}>
+            Volver al inicio
+          </Button>
         </div>
       </div>
     </div>

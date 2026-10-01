@@ -86,7 +86,9 @@ describe('ConfigDrawer (integration)', () => {
     it('applies dark theme to <html> and cookie', async () => {
       const screen = await renderConfigDrawer()
       await openDrawer(screen)
-      await userEvent.click(screen.getByRole('radio', { name: /seleccionar oscuro/i }))
+      await userEvent.click(
+        screen.getByRole('radio', { name: /seleccionar oscuro/i })
+      )
       await vi.waitFor(() =>
         expect(document.documentElement.classList.contains('dark')).toBe(true)
       )
@@ -174,7 +176,9 @@ describe('ConfigDrawer (integration)', () => {
       const screen = await renderConfigDrawer()
       await openDrawer(screen)
 
-      await userEvent.click(screen.getByRole('radio', { name: /seleccionar oscuro/i }))
+      await userEvent.click(
+        screen.getByRole('radio', { name: /seleccionar oscuro/i })
+      )
       await vi.waitFor(() => expect(getCookie('vite-ui-theme')).toBe('dark'))
 
       await userEvent.click(
@@ -267,7 +271,9 @@ describe('ConfigDrawer (integration)', () => {
     await openDrawer(screen)
 
     await expect
-      .element(screen.getByRole('radio', { name: /seleccionar predeterminado/i }))
+      .element(
+        screen.getByRole('radio', { name: /seleccionar predeterminado/i })
+      )
       .toHaveAttribute('data-state', 'checked')
 
     await userEvent.click(
@@ -283,7 +289,9 @@ describe('ConfigDrawer (integration)', () => {
 
     await openDrawer(screen)
 
-    await userEvent.click(screen.getByRole('radio', { name: /seleccionar oscuro/i }))
+    await userEvent.click(
+      screen.getByRole('radio', { name: /seleccionar oscuro/i })
+    )
     await userEvent.click(
       screen.getByRole('radio', { name: /seleccionar derecha a izquierda/i })
     )

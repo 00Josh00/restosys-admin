@@ -89,9 +89,7 @@ export function AppearanceForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tema</FormLabel>
-              <FormDescription>
-                Selecciona el tema del panel.
-              </FormDescription>
+              <FormDescription>Selecciona el tema del panel.</FormDescription>
               <FormMessage />
               <RadioGroup
                 onValueChange={field.onChange}

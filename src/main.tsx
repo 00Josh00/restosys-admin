@@ -9,8 +9,8 @@ import {
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
-import { supabase } from '@/lib/supabase'
 import { handleServerError } from '@/lib/handle-server-error'
+import { supabase } from '@/lib/supabase'
 import { DirectionProvider } from './context/direction-provider'
 import { FontProvider } from './context/font-provider'
 import { ThemeProvider } from './context/theme-provider'
@@ -21,8 +21,8 @@ import './styles/index.css'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
 }
 
 const queryClient = new QueryClient({

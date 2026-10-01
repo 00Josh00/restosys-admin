@@ -84,8 +84,8 @@ export function ProfileForm() {
                 <Input placeholder='restosys' {...field} />
               </FormControl>
               <FormDescription>
-                Este es tu nombre público. Puede ser tu nombre real o un seudónimo.
-                Solo puedes cambiarlo una vez cada 30 días.
+                Este es tu nombre público. Puede ser tu nombre real o un
+                seudónimo. Solo puedes cambiarlo una vez cada 30 días.
               </FormDescription>
               <FormMessage />
             </FormItem>

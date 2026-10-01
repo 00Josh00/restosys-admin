@@ -13,7 +13,12 @@ export type MenuProduct = {
   categories: { name: string } | null
 }
 
-export type MenuCategory = { id: string; name: string; is_active: boolean; sort_order: number }
+export type MenuCategory = {
+  id: string
+  name: string
+  is_active: boolean
+  sort_order: number
+}
 
 export type ComboOption = {
   id: string
@@ -33,17 +38,27 @@ export function useMenu() {
   return useQuery({
     queryKey: ['menu'],
     queryFn: async (): Promise<MenuData> => {
-      const [productsResult, categoriesResult, comboResult] = await Promise.all([
-        supabase
-          .from('products')
-          .select(
-            'id, name, description, price, is_available, is_combo, combo_slots, category_id, categories(name)'
-          )
-          .order('name'),
-        supabase.from('categories').select('id, name, is_active, sort_order').order('sort_order').order('name'),
-        supabase.from('combo_options').select('id, combo_id, option_id, is_default, sort_order').order('sort_order'),
-      ])
-      const error = productsResult.error ?? categoriesResult.error ?? comboResult.error
+      const [productsResult, categoriesResult, comboResult] = await Promise.all(
+        [
+          supabase
+            .from('products')
+            .select(
+              'id, name, description, price, is_available, is_combo, combo_slots, category_id, categories(name)'
+            )
+            .order('name'),
+          supabase
+            .from('categories')
+            .select('id, name, is_active, sort_order')
+            .order('sort_order')
+            .order('name'),
+          supabase
+            .from('combo_options')
+            .select('id, combo_id, option_id, is_default, sort_order')
+            .order('sort_order'),
+        ]
+      )
+      const error =
+        productsResult.error ?? categoriesResult.error ?? comboResult.error
       if (error) throw error
       return {
         products: (productsResult.data ?? []) as unknown as MenuProduct[],

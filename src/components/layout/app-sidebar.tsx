@@ -1,5 +1,5 @@
-import { useLayout } from '@/context/layout-provider'
 import { useAuthStore } from '@/stores/auth-store'
+import { useLayout } from '@/context/layout-provider'
 import {
   Sidebar,
   SidebarContent,
@@ -23,7 +23,8 @@ export function AppSidebar() {
       user?.email?.split('@')[0] ||
       sidebarData.user.name,
     email: user?.email ?? sidebarData.user.email,
-    avatar: (user?.user_metadata?.avatar_url as string) ?? sidebarData.user.avatar,
+    avatar:
+      (user?.user_metadata?.avatar_url as string) ?? sidebarData.user.avatar,
   }
 
   return (

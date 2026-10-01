@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from '@tanstack/react-router'
-import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth-store'
+import { supabase } from '@/lib/supabase'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 
 interface SignOutDialogProps {

@@ -1,19 +1,19 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Header } from '@/components/layout/header'
-import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth-store'
+import { supabase } from '@/lib/supabase'
 import {
   formatDateTimeInLima,
   formatDateInLima,
   formatTimeInLima,
 } from '@/lib/timezone'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Header } from '@/components/layout/header'
+import { Main } from '@/components/layout/main'
+import { ProfileDropdown } from '@/components/profile-dropdown'
+import { Search } from '@/components/search'
+import { ThemeSwitch } from '@/components/theme-switch'
 
 export function PageShell({
   title,
@@ -38,7 +38,9 @@ export function PageShell({
           <div>
             <h1 className='text-2xl font-bold tracking-tight'>{title}</h1>
             {description && (
-              <p className='mt-1 text-sm text-muted-foreground'>{description}</p>
+              <p className='mt-1 text-sm text-muted-foreground'>
+                {description}
+              </p>
             )}
           </div>
           {action}
@@ -49,7 +51,11 @@ export function PageShell({
   )
 }
 
-export function PageLoading({ label = 'Cargando información…' }: { label?: string }) {
+export function PageLoading({
+  label = 'Cargando información…',
+}: {
+  label?: string
+}) {
   return (
     <div className='flex min-h-40 items-center justify-center text-sm text-muted-foreground'>
       {label}
@@ -61,12 +67,15 @@ export function PageError({ message }: { message: string }) {
   return (
     <Card className='border-destructive/40'>
       <CardHeader>
-        <CardTitle className='text-base'>No se pudieron cargar los datos</CardTitle>
+        <CardTitle className='text-base'>
+          No se pudieron cargar los datos
+        </CardTitle>
       </CardHeader>
       <CardContent className='space-y-3'>
         <p className='text-sm text-muted-foreground'>{message}</p>
         <p className='text-sm text-muted-foreground'>
-          Revisa la conexión, los permisos RLS y que las migraciones estén aplicadas.
+          Revisa la conexión, los permisos RLS y que las migraciones estén
+          aplicadas.
         </p>
       </CardContent>
     </Card>
@@ -108,7 +117,9 @@ export function MetricCard({
       </CardHeader>
       <CardContent>
         <div className='text-2xl font-bold'>{value}</div>
-        {detail && <p className='mt-1 text-xs text-muted-foreground'>{detail}</p>}
+        {detail && (
+          <p className='mt-1 text-xs text-muted-foreground'>{detail}</p>
+        )}
       </CardContent>
     </Card>
   )
@@ -126,7 +137,9 @@ export function useUserRole() {
         .eq('id', user!.id)
         .maybeSingle()
       if (error) throw error
-      return (data?.role as 'admin' | 'mesero' | 'cocina' | undefined) ?? 'mesero'
+      return (
+        (data?.role as 'admin' | 'mesero' | 'cocina' | undefined) ?? 'mesero'
+      )
     },
   })
 }
@@ -173,7 +186,7 @@ export function TextInput(props: React.ComponentProps<'input'>) {
   return (
     <input
       {...props}
-      className={`h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none transition focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] ${props.className ?? ''}`}
+      className={`h-10 min-h-[44px] w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs transition outline-none focus-visible:ring-2 focus-visible:ring-ring ${props.className ?? ''}`}
     />
   )
 }
@@ -182,7 +195,7 @@ export function NativeSelect(props: React.ComponentProps<'select'>) {
   return (
     <select
       {...props}
-      className={`h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] ${props.className ?? ''}`}
+      className={`h-10 min-h-[44px] w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring ${props.className ?? ''}`}
     />
   )
 }

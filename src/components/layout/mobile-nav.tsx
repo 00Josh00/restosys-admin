@@ -1,5 +1,5 @@
-import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import {
   Armchair,
   BarChart3,
@@ -62,8 +62,8 @@ export function MobileNav() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  'flex min-w-0 flex-1 flex-col items-center gap-1 px-3 py-2.5 text-[11px] font-medium min-h-[44px] min-w-[44px]',
-                  active ? 'text-primary' : 'text-muted-foreground',
+                  'flex min-h-[44px] min-w-0 min-w-[44px] flex-1 flex-col items-center gap-1 px-3 py-2.5 text-[11px] font-medium',
+                  active ? 'text-primary' : 'text-muted-foreground'
                 )}
                 onClick={() => handleNavigate(item.to)}
               >
@@ -76,7 +76,7 @@ export function MobileNav() {
             <SheetTrigger asChild>
               <button
                 className={cn(
-                  'flex min-w-0 flex-1 flex-col items-center gap-1 px-3 py-2.5 text-[11px] font-medium min-h-[44px] min-w-[44px] text-muted-foreground',
+                  'flex min-h-[44px] min-w-0 min-w-[44px] flex-1 flex-col items-center gap-1 px-3 py-2.5 text-[11px] font-medium text-muted-foreground'
                 )}
                 aria-label='Más opciones'
               >
@@ -84,7 +84,11 @@ export function MobileNav() {
                 <span className='truncate text-center'>Más</span>
               </button>
             </SheetTrigger>
-            <SheetContent className='p-0' side='bottom' style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            <SheetContent
+              className='p-0'
+              side='bottom'
+              style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            >
               <div className='grid gap-1 p-4'>
                 {SECONDARY_ITEMS.map((item) => {
                   const active = isActive(item.to)
@@ -94,10 +98,10 @@ export function MobileNav() {
                       key={item.to}
                       to={item.to}
                       className={cn(
-                        'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium min-h-[48px]',
+                        'flex min-h-[48px] items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium',
                         active
                           ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-accent',
+                          : 'text-muted-foreground hover:bg-accent'
                       )}
                       onClick={() => handleNavigate(item.to)}
                     >

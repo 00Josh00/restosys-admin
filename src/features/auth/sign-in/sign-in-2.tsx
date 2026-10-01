@@ -17,7 +17,9 @@ export function SignIn2() {
         </div>
         <div className='mx-auto flex w-full max-w-sm flex-col justify-center space-y-2'>
           <div className='flex flex-col space-y-2 text-start'>
-            <h2 className='text-lg font-semibold tracking-tight'>Iniciar sesión</h2>
+            <h2 className='text-lg font-semibold tracking-tight'>
+              Iniciar sesión
+            </h2>
             <p className='text-sm text-muted-foreground'>
               Ingresa tu correo y contraseña para entrar{' '}
               <br className='max-sm:hidden' /> al sistema. ¿No tienes cuenta?{' '}

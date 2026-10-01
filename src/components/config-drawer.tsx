@@ -312,7 +312,8 @@ function LayoutConfig() {
         ))}
       </Radio>
       <div id='layout-description' className='sr-only'>
-        Elige entre diseño predeterminado expandido, compacto solo con íconos o completo.
+        Elige entre diseño predeterminado expandido, compacto solo con íconos o
+        completo.
       </div>
     </div>
   )

@@ -50,9 +50,7 @@ describe('ForgotPasswordForm', () => {
     await userEvent.fill(emailInput, 'a@b.com')
     await userEvent.click(continueButton)
 
-    await vi.waitFor(() =>
-      expect(resetPasswordForEmail).toHaveBeenCalledOnce()
-    )
+    await vi.waitFor(() => expect(resetPasswordForEmail).toHaveBeenCalledOnce())
     await vi.waitFor(() =>
       expect(navigateMock).toHaveBeenCalledWith({ to: '/sign-in' })
     )

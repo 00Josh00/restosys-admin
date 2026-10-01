@@ -1,8 +1,8 @@
 'use client'
 
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface Props {
   children: ReactNode
@@ -42,7 +42,10 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className='mt-2 text-sm text-muted-foreground'>
               {this.state.error?.message || 'Ha ocurrido un error inesperado'}
             </p>
-            <Button className='mt-4' onClick={() => this.setState({ hasError: false, error: null })}>
+            <Button
+              className='mt-4'
+              onClick={() => this.setState({ hasError: false, error: null })}
+            >
               Reintentar
             </Button>
           </div>

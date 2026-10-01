@@ -54,7 +54,8 @@ export function Settings() {
             Configuración
           </h1>
           <p className='text-muted-foreground'>
-            Administra la configuración de tu cuenta y tus preferencias de correo.
+            Administra la configuración de tu cuenta y tus preferencias de
+            correo.
           </p>
         </div>
         <Separator className='my-4 lg:my-6' />

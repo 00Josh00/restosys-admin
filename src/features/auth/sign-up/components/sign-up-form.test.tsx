@@ -89,7 +89,10 @@ describe('SignUpForm', () => {
 
     await vi.waitFor(() => expect(signUp).toHaveBeenCalledOnce())
     await vi.waitFor(() =>
-      expect(navigateMock).toHaveBeenCalledWith({ to: '/sign-in', replace: true })
+      expect(navigateMock).toHaveBeenCalledWith({
+        to: '/sign-in',
+        replace: true,
+      })
     )
   })
 })
