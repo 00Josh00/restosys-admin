@@ -17,7 +17,12 @@ type KitchenOrder = {
   notes: string | null
   created_at: string
   restaurant_tables: { name: string } | null
-  order_items: { product_name: string; quantity: number; notes: string | null }[]
+  order_items: {
+    product_name: string
+    quantity: number
+    notes: string | null
+    order_item_components: { product_name: string; position: number }[]
+  }[]
 }
 
 export function KitchenPage() {
@@ -27,7 +32,7 @@ export function KitchenPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, order_type, status, total, notes, created_at, restaurant_tables(name), order_items(product_name, quantity, notes)')
+        .select('id, order_number, order_type, status, total, notes, created_at, restaurant_tables(name), order_items(product_name, quantity, notes, order_item_components(product_name, position))')
         .in('status', ['pendiente', 'preparacion', 'listo'])
         .order('created_at')
       if (error) throw error
@@ -116,7 +121,19 @@ function KitchenColumn({
           </CardHeader>
           <CardContent className='space-y-3'>
             <ul className='space-y-2 text-sm'>
-              {order.order_items.map((item, index) => <li className='flex justify-between gap-3' key={`${order.id}-${index}`}><span><strong>{item.quantity}×</strong> {item.product_name}{item.notes && <span className='block text-xs text-muted-foreground'>{item.notes}</span>}</span></li>)}
+              {order.order_items.map((item, index) => (
+                <li className='flex justify-between gap-3' key={`${order.id}-${index}`}>
+                  <span>
+                    <strong>{item.quantity}×</strong> {item.product_name}
+                    {item.order_item_components?.length > 0 && (
+                      <span className='block text-xs text-muted-foreground'>
+                        {[...item.order_item_components].sort((a, b) => a.position - b.position).map((component) => component.product_name).join(' + ')}
+                      </span>
+                    )}
+                    {item.notes && <span className='block text-xs text-muted-foreground'>{item.notes}</span>}
+                  </span>
+                </li>
+              ))}
             </ul>
             {order.notes && <p className='rounded-md bg-amber-500/10 p-2 text-sm'>Nota: {order.notes}</p>}
             <div className='flex items-center justify-between border-t pt-3'><span className='text-sm text-muted-foreground'>{formatMoney(order.total)}</span><Button size='sm' onClick={() => onAdvance(order.id, nextStatus)}>{order.status === 'pendiente' ? <ChefHat /> : <Check />}{nextLabel}</Button></div>
