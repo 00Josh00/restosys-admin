@@ -105,20 +105,16 @@ export function OrderDialogSplit({
           .filter((c): c is string => Boolean(c))
       )
     ).sort()
-    const hasDuos = availableProducts.some((p: MenuProduct) => p.is_combo && p.combo_slots === 2)
-    const hasTrios = availableProducts.some((p: MenuProduct) => p.is_combo && p.combo_slots === 3)
+    const hasCombos = availableProducts.some((p: MenuProduct) => p.is_combo)
     const cats: string[] = ['Todos']
-    if (hasDuos) cats.push('Dúos')
-    if (hasTrios) cats.push('Tríos')
+    if (hasCombos) cats.push('Combos')
     return [...cats, ...regularCats]
   }, [availableProducts])
 
   const filteredProducts = useMemo<MenuProduct[]>(() => {
     let result = availableProducts
-    if (activeCategory === 'Dúos') {
-      result = result.filter((p: MenuProduct) => p.is_combo && p.combo_slots === 2)
-    } else if (activeCategory === 'Tríos') {
-      result = result.filter((p: MenuProduct) => p.is_combo && p.combo_slots === 3)
+    if (activeCategory === 'Combos') {
+      result = result.filter((p: MenuProduct) => p.is_combo)
     } else if (activeCategory !== 'Todos') {
       result = result.filter((p: MenuProduct) => p.categories?.name === activeCategory)
     }
@@ -289,7 +285,7 @@ export function OrderDialogSplit({
 
   const getCategoryIcon = (cat: string) => {
     const c = cat.toLowerCase()
-    if (c === 'dúos' || c === 'duos' || c === 'tríos' || c === 'trios') return Package
+    if (c === 'combos' || c === 'dúos' || c === 'duos' || c === 'tríos' || c === 'trios') return Package
     if (c.includes('bebida') || c.includes('drink') || c.includes('jugo') || c.includes('gaseosa') || c.includes('cerveza') || c.includes('alcohol')) return Wine
     if (c.includes('cafe') || c.includes('café') || c.includes('infusion')) return Coffee
     if (c.includes('postre') || c.includes('dulce') || c.includes('helado')) return ChefHat
