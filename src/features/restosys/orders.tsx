@@ -639,41 +639,39 @@ export function OrderDialog({
               </p>
             ) : (
               <>
-                <FormField label='Tipo de pedido'>
-                  <NativeSelect
-                    name='order_type'
-                    defaultValue={initialTableId ? 'local' : 'local'}
-                    disabled={!!initialTableId}
-                  >
-                    <option value='local'>En local</option>
-                    <option value='llevar'>Para llevar</option>
-                    <option value='delivery'>Delivery</option>
-                  </NativeSelect>
-                  {initialTableId && (
+                {!initialTableId && (
+                  <>
+                    <FormField label='Tipo de pedido'>
+                      <NativeSelect
+                        name='order_type'
+                        defaultValue='local'
+                      >
+                        <option value='local'>En local</option>
+                        <option value='llevar'>Para llevar</option>
+                        <option value='delivery'>Delivery</option>
+                      </NativeSelect>
+                    </FormField>
+                    <FormField label='Mesa (para pedidos en local)'>
+                      <NativeSelect
+                        name='table_id'
+                        defaultValue=''
+                      >
+                        <option value=''>Seleccionar mesa</option>
+                        {tables.map((table) => (
+                          <option key={table.id} value={table.id}>
+                            {table.name}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    </FormField>
+                  </>
+                )}
+                {initialTableId && (
+                  <>
                     <input type='hidden' name='order_type' value='local' />
-                  )}
-                </FormField>
-                <FormField label='Mesa (para pedidos en local)'>
-                  <NativeSelect
-                    name='table_id'
-                    defaultValue={initialTableId || ''}
-                    disabled={!!initialTableId}
-                  >
-                    <option value=''>Seleccionar mesa</option>
-                    {tables.map((table) => (
-                      <option key={table.id} value={table.id}>
-                        {table.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                  {initialTableId && (
-                    <input
-                      type='hidden'
-                      name='table_id'
-                      value={initialTableId}
-                    />
-                  )}
-                </FormField>
+                    <input type='hidden' name='table_id' value={initialTableId} />
+                  </>
+                )}
                 <FormField label='Cliente (opcional)'>
                   <TextInput
                     name='customer_name'

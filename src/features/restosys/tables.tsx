@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { OrderDialog } from './orders'
+import { useMenu } from './menu'
 import {
   errorMessage,
   FormField,
@@ -43,6 +44,7 @@ const activeStatuses = ['pendiente', 'preparacion', 'listo', 'entregado']
 export function TablesPage() {
   const queryClient = useQueryClient()
   const role = useUserRole()
+  const menu = useMenu()
   const [open, setOpen] = useState(false)
   const [createOrderForTable, setCreateOrderForTable] =
     useState<RestaurantTable | null>(null)
@@ -265,7 +267,7 @@ export function TablesPage() {
             !open && setCreateOrderForTable(null)
           }
           mode='create'
-          menu={{ products: [], categories: [], comboOptions: [] }}
+          menu={menu.data ?? { products: [], categories: [], comboOptions: [] }}
           tables={tablesQuery.data ?? []}
           onDone={() => {
             void queryClient.invalidateQueries({ queryKey: ['orders'] })
