@@ -306,25 +306,22 @@ export function OrderDialogSplit({
                     <p>No hay productos en esta categoría</p>
                   </div>
                 ) : (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {filteredProducts.map((product: MenuProduct) => (
-                      <button key={product.id} type="button" onClick={() => addToCart(product)} className="group relative flex flex-col items-start gap-2 p-3 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/50 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                        <div className="w-full aspect-square rounded-md bg-muted flex items-center justify-center overflow-hidden relative">
-                          <UtensilsCrossed className="size-8 text-muted-foreground/50" />
-                        </div>
-                        <div className="w-full flex flex-col gap-1">
-                          <h4 className="font-medium text-sm truncate">{product.name}</h4>
+                      <button key={product.id} type="button" onClick={() => addToCart(product)} className="group relative flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/50 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none min-h-[56px]">
+                        <div className="flex-1 min-w-0 flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-sm truncate">{product.name}</h4>
+                            {product.is_combo && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
+                                <Package className="size-2.5" /> Combo
+                              </span>
+                            )}
+                          </div>
                           <span className="font-semibold text-primary text-sm">{formatMoney(product.price)}</span>
-                          {product.is_combo && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-primary/10 text-primary">
-                              <Package className="size-3" /> Combo
-                            </span>
-                          )}
                         </div>
-                        <div className="absolute inset-e-2 bottom-2">
-                          <span className="inline-flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Plus className="size-4" />
-                          </span>
+                        <div className="flex items-center justify-center size-10 rounded-full bg-primary/10 text-primary shrink-0">
+                          <Plus className="size-4" />
                         </div>
                       </button>
                     ))}
