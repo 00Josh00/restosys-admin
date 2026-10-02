@@ -1,10 +1,29 @@
 'use client'
 
 import { useState, useMemo, type FormEvent } from 'react'
-import { Minus, Plus, X, Search, UtensilsCrossed, Wine, Coffee, ChefHat, Package, Trash2 } from 'lucide-react'
+import {
+  Minus,
+  Plus,
+  X,
+  Search,
+  UtensilsCrossed,
+  Wine,
+  Coffee,
+  ChefHat,
+  Package,
+  Trash2,
+  ShoppingCart,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { FormField, TextInput, NativeSelect, formatMoney, errorMessage } from './shared'
 import { supabase } from '@/lib/supabase'
 import { type MenuProduct, type MenuData, type ComboOption } from './menu'
@@ -24,81 +43,6 @@ type Order = {
 }
 type Table = { id: string; name: string; status: string }
 type CartLine = { key: string; product: MenuProduct; quantity: number; components: MenuProduct[] }
-
-interface CartSummaryProps {
-  lines: CartLine[]
-  subtotal: number
-  onClear: () => void
-  onUpdateQty: (key: string, delta: number) => void
-  onRemove: (key: string) => void
-  onEditCombo: (line: CartLine) => void
-  formatMoney: (value: number) => string
-}
-
-function CartSummary({
-  lines,
-  subtotal,
-  onClear,
-  onUpdateQty,
-  onRemove,
-  onEditCombo,
-  formatMoney,
-}: CartSummaryProps) {
-  if (lines.length === 0) {
-    return (
-      <div className="bg-muted/30 rounded-lg p-3 text-center text-sm text-muted-foreground">
-        <Package className="size-6 mx-auto mb-1 opacity-50" />
-        <p>El pedido está vacío</p>
-        <p className="text-xs">Selecciona productos abajo</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="bg-card border border-border rounded-lg p-3">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-sm">Pedido ({lines.length})</h3>
-        <Button type="button" variant="ghost" size="icon" onClick={onClear} aria-label="Limpiar pedido" className="size-7">
-          <X className="size-4" />
-        </Button>
-      </div>
-      <div className="divide-y max-h-40 overflow-y-auto">
-        {lines.map((line) => (
-          <div key={line.key} className="py-2 flex flex-col gap-1">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex-1 min-w-0 flex items-center gap-2">
-                <span className="font-medium text-sm">{line.quantity}×</span>
-                <span className="font-medium text-sm truncate">{line.product.name}</span>
-                {line.product.is_combo && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
-                    <Package className="size-2.5" /> {line.product.combo_slots === 3 ? 'Trío' : 'Dúo'}
-                  </span>
-                )}
-              </div>
-              <span className="font-semibold text-sm whitespace-nowrap">{formatMoney(Number(line.product.price) * line.quantity)}</span>
-            </div>
-            {line.components.length > 0 && (
-              <p className="ml-6 text-xs text-muted-foreground">{line.components.map((c) => c.name).join(' + ')}</p>
-            )}
-            <div className="flex items-center gap-1 ml-6">
-              <Button type="button" size="icon" variant="outline" className="size-7" onClick={() => onUpdateQty(line.key, -1)} aria-label="Disminuir"><Minus className="size-3.5" /></Button>
-              <span className="w-7 text-center text-sm font-medium">{line.quantity}</span>
-              <Button type="button" size="icon" variant="outline" className="size-7" onClick={() => onUpdateQty(line.key, 1)} aria-label="Aumentar"><Plus className="size-3.5" /></Button>
-              <Button type="button" size="icon" variant="ghost" className="size-7 text-destructive hover:bg-destructive/10" onClick={() => onRemove(line.key)} aria-label="Eliminar"><Trash2 className="size-3.5" /></Button>
-              {line.product.is_combo && (
-                <Button type="button" size="icon" variant="ghost" className="size-7" onClick={() => onEditCombo(line)} aria-label="Modificar combo"><X className="size-3.5" /></Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 border-t pt-2 space-y-1">
-        <div className="flex justify-between text-sm"><span>Subtotal</span><span className="font-semibold">{formatMoney(subtotal)}</span></div>
-        <div className="flex justify-between text-base font-bold"><span>Total</span><span>{formatMoney(subtotal)}</span></div>
-      </div>
-    </div>
-  )
-}
 
 interface OrderDialogSplitProps {
   open: boolean
@@ -130,27 +74,27 @@ export function OrderDialogSplit({
   const [saving, setSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<string>('Todos')
+  const [cartOpen, setCartOpen] = useState(false)
+
+  const isAppend = mode === 'append'
 
   const availableProducts = useMemo<MenuProduct[]>(
     () => menu.products.filter((p: MenuProduct) => p.is_available),
     [menu.products]
   )
 
-  const comboChoices = useMemo<Map<string, MenuProduct[]>>(
-    () => {
-      const byId = new Map(availableProducts.map((p: MenuProduct) => [p.id, p]))
-      const map = new Map<string, MenuProduct[]>()
-      for (const opt of menu.comboOptions) {
-        const product = byId.get(opt.option_id)
-        if (!product) continue
-        const list = map.get(opt.combo_id) ?? []
-        list.push(product)
-        map.set(opt.combo_id, list)
-      }
-      return map
-    },
-    [menu.comboOptions, availableProducts]
-  )
+  const comboChoices = useMemo<Map<string, MenuProduct[]>>(() => {
+    const byId = new Map(availableProducts.map((p: MenuProduct) => [p.id, p]))
+    const map = new Map<string, MenuProduct[]>()
+    for (const opt of menu.comboOptions) {
+      const product = byId.get(opt.option_id)
+      if (!product) continue
+      const list = map.get(opt.combo_id) ?? []
+      list.push(product)
+      map.set(opt.combo_id, list)
+    }
+    return map
+  }, [menu.comboOptions, availableProducts])
 
   const categories = useMemo<string[]>(() => {
     const regularCats = Array.from(
@@ -190,6 +134,23 @@ export function OrderDialogSplit({
     [lines]
   )
 
+  const totalItems = useMemo<number>(
+    () => lines.reduce((sum, line) => sum + line.quantity, 0),
+    [lines]
+  )
+
+  const quantityByProduct = useMemo<Map<string, number>>(() => {
+    const map = new Map<string, number>()
+    for (const line of lines) {
+      map.set(line.product.id, (map.get(line.product.id) ?? 0) + line.quantity)
+    }
+    return map
+  }, [lines])
+
+  const tableName = initialTableId
+    ? tables.find((t) => t.id === initialTableId)?.name
+    : undefined
+
   const defaultSelection = (product: MenuProduct) => {
     const slots = product.combo_slots ?? 2
     const choices = comboChoices.get(product.id) ?? []
@@ -225,6 +186,14 @@ export function OrderDialogSplit({
         )
       return [...current, { key, product, quantity, components }]
     })
+  }
+
+  const changeQty = (key: string, delta: number) => {
+    setLines((current) =>
+      current
+        .map((line) => (line.key === key ? { ...line, quantity: line.quantity + delta } : line))
+        .filter((line) => line.quantity > 0)
+    )
   }
 
   const addToCart = (product: MenuProduct) => {
@@ -315,14 +284,11 @@ export function OrderDialogSplit({
     }
   }
 
-  const isAppend = mode === 'append'
   const canSubmit = lines.length > 0 && !saving
 
   const getCategoryIcon = (cat: string) => {
     const c = cat.toLowerCase()
-    if (c === 'dúos' || c === 'duos') return Package
-    if (c === 'tríos' || c === 'trios') return Package
-    if (c.includes('plato') || c.includes('comida') || c.includes('principal')) return UtensilsCrossed
+    if (c === 'dúos' || c === 'duos' || c === 'tríos' || c === 'trios') return Package
     if (c.includes('bebida') || c.includes('drink') || c.includes('jugo') || c.includes('gaseosa') || c.includes('cerveza') || c.includes('alcohol')) return Wine
     if (c.includes('cafe') || c.includes('café') || c.includes('infusion')) return Coffee
     if (c.includes('postre') || c.includes('dulce') || c.includes('helado')) return ChefHat
@@ -330,153 +296,322 @@ export function OrderDialogSplit({
     return UtensilsCrossed
   }
 
+  const title = isAppend ? 'Agregar platos' : 'Nuevo pedido'
+  const subtitle = isAppend
+    ? `Pedido #${order?.order_number ?? ''}`
+    : tableName
+      ? `Mesa: ${tableName}`
+      : 'Selecciona productos'
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90dvh] w-full max-w-sm" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <form id="order-form" onSubmit={submit} className="flex flex-col gap-3 min-h-0 h-[calc(90dvh-3rem)]">
-            <DialogHeader className="flex flex-col gap-3">
-              <DialogTitle className="text-lg">
-                {isAppend ? `Agregar platos · Pedido #${order?.order_number ?? ''}` : 'Crear pedido'}
-              </DialogTitle>
-              {!isAppend && !initialTableId && (
-                <div className="grid grid-cols-2 gap-2">
-                  <FormField label="Tipo">
-                    <NativeSelect name="order_type" defaultValue="local">
-                      <option value="local">🍽️ En local</option>
-                      <option value="llevar">📦 Para llevar</option>
-                      <option value="delivery">🚚 Delivery</option>
-                    </NativeSelect>
-                  </FormField>
-                  <FormField label="Mesa">
-                    <NativeSelect name="table_id" defaultValue="">
-                      <option value="">Seleccionar</option>
-                      {tables.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </NativeSelect>
-                  </FormField>
-                </div>
-              )}
-              {initialTableId && (
-                <>
-                  <input type="hidden" name="order_type" value="local" />
-                  <input type="hidden" name="table_id" value={initialTableId} />
-                </>
-              )}
-            </DialogHeader>
+        <DialogContent
+          className='flex flex-col gap-0 overflow-hidden p-0 max-sm:inset-0 max-sm:top-0 max-sm:left-0 max-sm:h-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none sm:h-[85dvh] sm:max-w-lg'
+        >
+          <form id='order-form' onSubmit={submit} className='flex flex-1 flex-col min-h-0'>
+            {initialTableId && (
+              <>
+                <input type='hidden' name='order_type' value='local' />
+                <input type='hidden' name='table_id' value={initialTableId} />
+              </>
+            )}
 
-            <CartSummary
-              lines={lines}
-              subtotal={subtotal}
-              onClear={() => setLines([])}
-              onUpdateQty={(key, delta) => setLines((c) => c.map((i) => i.key === key ? { ...i, quantity: Math.max(1, i.quantity + delta) } : i))}
-              onRemove={(key) => setLines((c) => c.filter((i) => i.key !== key))}
-              onEditCombo={(line) => setCombo({ product: line.product, editingKey: line.key, selection: line.components.map((c) => c.id) })}
-              formatMoney={formatMoney}
-            />
+            <div
+              className='flex items-center justify-between gap-2 border-b px-4 py-3'
+              style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}
+            >
+              <div className='min-w-0'>
+                <h2 className='truncate text-base font-semibold'>{title}</h2>
+                <p className='truncate text-xs text-muted-foreground'>{subtitle}</p>
+              </div>
+              <Button type='button' variant='ghost' size='icon' onClick={() => onOpenChange(false)} aria-label='Cerrar'>
+                <X className='size-5' />
+              </Button>
+            </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="relative">
-                <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            {!isAppend && !initialTableId && (
+              <div className='grid grid-cols-2 gap-2 border-b px-4 py-3'>
+                <NativeSelect name='order_type' defaultValue='local' aria-label='Tipo de pedido'>
+                  <option value='local'>🍽️ En local</option>
+                  <option value='llevar'>📦 Para llevar</option>
+                  <option value='delivery'>🚚 Delivery</option>
+                </NativeSelect>
+                <NativeSelect name='table_id' defaultValue='' aria-label='Mesa'>
+                  <option value=''>Mesa…</option>
+                  {tables.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </NativeSelect>
+              </div>
+            )}
+
+            <div className='space-y-2 border-b px-4 py-3'>
+              <div className='relative'>
+                <Search className='absolute inset-s-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
                 <input
-                  type="search"
-                  placeholder="Buscar producto…"
+                  type='search'
+                  placeholder='Buscar producto…'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-10 w-full pl-10 pr-4 rounded-md border border-input bg-background text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className='h-11 w-full rounded-md border border-input bg-background pl-10 pr-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring'
                 />
               </div>
-              <div className="flex gap-1 overflow-x-auto pb-1" role="tablist">
-                <button type="button" role="tab" aria-selected={activeCategory === 'Todos'} onClick={() => setActiveCategory('Todos')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === 'Todos' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}>
-                  <Search className="size-3.5" /> Todos
-                </button>
+              <div className='flex gap-1.5 overflow-x-auto pb-0.5' role='tablist'>
+                <CategoryTab active={activeCategory === 'Todos'} onClick={() => setActiveCategory('Todos')}>
+                  <Search className='size-3.5' /> Todos
+                </CategoryTab>
                 {categories.slice(1).map((cat) => {
                   const Icon = getCategoryIcon(cat)
                   return (
-                    <button key={cat} type="button" role="tab" aria-selected={activeCategory === cat} onClick={() => setActiveCategory(cat)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}>
-                      <Icon className="size-3.5" /> {cat}
-                    </button>
+                    <CategoryTab key={cat} active={activeCategory === cat} onClick={() => setActiveCategory(cat)}>
+                      <Icon className='size-3.5' /> {cat}
+                    </CategoryTab>
                   )
                 })}
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className='flex-1 overflow-y-auto px-4 py-3'>
               {filteredProducts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
-                  <Search className="size-12 mb-2 opacity-50" />
-                  <p>No hay productos en esta categoría</p>
+                <div className='flex h-full flex-col items-center justify-center py-10 text-muted-foreground'>
+                  <Search className='mb-2 size-10 opacity-50' />
+                  <p className='text-sm'>No hay productos en esta categoría</p>
                 </div>
               ) : (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {filteredProducts.map((product: MenuProduct) => (
-                    <button key={product.id} type="button" onClick={() => addToCart(product)} className="group relative flex items-center justify-between gap-2 p-2 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/50 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none min-h-[48px]">
-                      <div className="flex-1 min-w-0 flex items-center gap-2">
-                        <h4 className="font-medium text-sm truncate">{product.name}</h4>
-                        {product.is_combo && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
-                            <Package className="size-2.5" /> {product.combo_slots === 3 ? 'Trío' : 'Dúo'}
-                          </span>
-                        )}
-                        <span className="font-semibold text-primary text-sm ml-auto whitespace-nowrap">{formatMoney(product.price)}</span>
-                      </div>
-                      <div className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary shrink-0">
-                        <Plus className="size-3.5" />
-                      </div>
-                    </button>
-                  ))}
+                <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
+                  {filteredProducts.map((product: MenuProduct) => {
+                    const qty = quantityByProduct.get(product.id) ?? 0
+                    return (
+                      <button
+                        key={product.id}
+                        type='button'
+                        onClick={() => addToCart(product)}
+                        className='relative flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-left transition-all hover:border-primary/50 hover:bg-accent/50 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none min-h-[56px]'
+                      >
+                        <div className='min-w-0 flex-1'>
+                          <div className='flex items-center gap-2'>
+                            <h4 className='truncate text-sm font-medium'>{product.name}</h4>
+                            {product.is_combo && (
+                              <span className='inline-flex shrink-0 items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary'>
+                                <Package className='size-2.5' /> {product.combo_slots === 3 ? 'Trío' : 'Dúo'}
+                              </span>
+                            )}
+                          </div>
+                          <span className='text-sm font-semibold text-primary'>{formatMoney(product.price)}</span>
+                        </div>
+                        <div className='relative flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
+                          <Plus className='size-4' />
+                          {qty > 0 && (
+                            <span className='absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground'>
+                              {qty}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>
 
-            {!isAppend && !initialTableId && (
-              <div className="grid gap-2 border-t pt-3">
-                <FormField label="Cliente (opcional)"><TextInput name="customer_name" placeholder="Nombre del cliente" /></FormField>
-                <div className="grid grid-cols-2 gap-2">
-                  <FormField label="Dirección delivery"><TextInput name="delivery_address" placeholder="Dirección" /></FormField>
-                  <FormField label="Costo delivery (S/)"><TextInput name="delivery_fee" type="number" min="0" step="0.5" defaultValue="0" /></FormField>
-                </div>
-              </div>
-            )}
-            {!isAppend && (
-              <FormField label="Notas para cocina (opcional)"><TextInput name="notes" placeholder="Ej. sin ají" /></FormField>
-            )}
-
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 w-full pt-1">
-              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button type="submit" disabled={!canSubmit} className="w-full sm:w-auto">
-                {saving ? 'Guardando…' : isAppend ? 'Agregar platos' : 'Enviar a cocina'}
+            <div
+              className='border-t px-4 py-3'
+              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+            >
+              <Button
+                type='button'
+                className='h-12 w-full text-base'
+                disabled={totalItems === 0}
+                onClick={() => setCartOpen(true)}
+              >
+                <ShoppingCart className='size-5' />
+                {totalItems > 0 ? `Ver pedido (${totalItems}) · ${formatMoney(subtotal)}` : 'Selecciona productos'}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
 
+      <Sheet open={cartOpen} onOpenChange={setCartOpen}>
+        <SheetContent side='bottom' className='flex h-[88dvh] flex-col gap-0 p-0'>
+          <SheetHeader className='border-b px-4 py-3'>
+            <SheetTitle className='flex items-center gap-2'>
+              <ShoppingCart className='size-5' /> Tu pedido ({totalItems})
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className='flex-1 overflow-y-auto px-4 py-3'>
+            {lines.length === 0 ? (
+              <div className='flex h-full flex-col items-center justify-center text-muted-foreground'>
+                <Package className='mb-2 size-12 opacity-40' />
+                <p className='text-sm'>El pedido está vacío</p>
+              </div>
+            ) : (
+              <div className='divide-y'>
+                {lines.map((line) => (
+                  <div key={line.key} className='py-3'>
+                    <div className='flex items-start justify-between gap-3'>
+                      <div className='min-w-0 flex-1'>
+                        <div className='flex items-center gap-2'>
+                          <span className='truncate text-sm font-medium'>{line.product.name}</span>
+                          {line.product.is_combo && (
+                            <span className='inline-flex shrink-0 items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary'>
+                              <Package className='size-2.5' /> {line.product.combo_slots === 3 ? 'Trío' : 'Dúo'}
+                            </span>
+                          )}
+                        </div>
+                        {line.components.length > 0 && (
+                          <p className='mt-0.5 text-xs text-muted-foreground'>
+                            {line.components.map((c) => c.name).join(' + ')}
+                          </p>
+                        )}
+                        <p className='mt-0.5 text-xs text-muted-foreground'>{formatMoney(line.product.price)} c/u</p>
+                      </div>
+                      <span className='whitespace-nowrap text-sm font-semibold'>
+                        {formatMoney(Number(line.product.price) * line.quantity)}
+                      </span>
+                    </div>
+                    <div className='mt-2 flex items-center gap-2'>
+                      <Button type='button' size='icon' variant='outline' className='size-9' onClick={() => changeQty(line.key, -1)} aria-label='Disminuir'>
+                        <Minus className='size-4' />
+                      </Button>
+                      <span className='w-9 text-center text-base font-semibold'>{line.quantity}</span>
+                      <Button type='button' size='icon' variant='outline' className='size-9' onClick={() => changeQty(line.key, 1)} aria-label='Aumentar'>
+                        <Plus className='size-4' />
+                      </Button>
+                      <Button type='button' size='icon' variant='ghost' className='size-9 text-destructive hover:bg-destructive/10' onClick={() => changeQty(line.key, -line.quantity)} aria-label='Eliminar'>
+                        <Trash2 className='size-4' />
+                      </Button>
+                      {line.product.is_combo && (
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='sm'
+                          className='ms-auto'
+                          onClick={() => setCombo({ product: line.product, editingKey: line.key, selection: line.components.map((c) => c.id) })}
+                        >
+                          Cambiar platos
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!isAppend && (
+              <div className='mt-4 space-y-3 border-t pt-4'>
+                <FormField label='Cliente (opcional)'>
+                  <TextInput form='order-form' name='customer_name' placeholder='Nombre del cliente' />
+                </FormField>
+                {!initialTableId && (
+                  <div className='grid grid-cols-2 gap-2'>
+                    <FormField label='Dirección delivery'>
+                      <TextInput form='order-form' name='delivery_address' placeholder='Dirección' />
+                    </FormField>
+                    <FormField label='Costo delivery (S/)'>
+                      <TextInput form='order-form' name='delivery_fee' type='number' min='0' step='0.5' defaultValue='0' />
+                    </FormField>
+                  </div>
+                )}
+                <FormField label='Notas para cocina (opcional)'>
+                  <TextInput form='order-form' name='notes' placeholder='Ej. sin ají' />
+                </FormField>
+              </div>
+            )}
+          </div>
+
+          <SheetFooter
+            className='border-t px-4 py-3'
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+          >
+            <div className='mb-2 flex items-center justify-between text-base font-bold'>
+              <span>Total</span>
+              <span>{formatMoney(subtotal)}</span>
+            </div>
+            <Button
+              type='submit'
+              form='order-form'
+              disabled={!canSubmit}
+              className='h-12 w-full text-base'
+            >
+              {saving ? 'Guardando…' : isAppend ? 'Agregar platos' : 'Enviar a cocina'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
       {combo && (
         <Dialog open onOpenChange={(next) => !next && setCombo(null)}>
-          <DialogContent className="sm:max-w-md" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <DialogContent className='sm:max-w-md'>
             <DialogHeader>
-              <DialogTitle>{combo.product.combo_slots === 3 ? 'Arma tu trío' : 'Arma tu dúo'} · {combo.product.name}</DialogTitle>
+              <DialogTitle>
+                {combo.product.combo_slots === 3 ? 'Arma tu trío' : 'Arma tu dúo'} · {combo.product.name}
+              </DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-muted-foreground">{formatMoney(combo.product.price)} · elige {combo.product.combo_slots ?? 2} platos</p>
-            <div className="grid gap-3">
+            <p className='text-sm text-muted-foreground'>
+              {formatMoney(combo.product.price)} · elige {combo.product.combo_slots ?? 2} platos
+            </p>
+            <div className='grid gap-3'>
               {Array.from({ length: combo.product.combo_slots ?? 2 }).map((_, index) => (
                 <FormField key={index} label={`Plato ${index + 1}`}>
-                  <NativeSelect value={combo.selection[index] ?? ''} onChange={(e) => setCombo((cur) => { if (!cur) return cur; const s = [...cur.selection]; s[index] = e.target.value; return { ...cur, selection: s } })}>
-                    <option value="">Elegir…</option>
+                  <NativeSelect
+                    value={combo.selection[index] ?? ''}
+                    onChange={(e) =>
+                      setCombo((cur) => {
+                        if (!cur) return cur
+                        const s = [...cur.selection]
+                        s[index] = e.target.value
+                        return { ...cur, selection: s }
+                      })
+                    }
+                  >
+                    <option value=''>Elegir…</option>
                     {(comboChoices.get(combo.product.id) ?? []).map((choice) => (
-                      <option key={choice.id} value={choice.id} disabled={combo.selection.includes(choice.id) && combo.selection[index] !== choice.id}>{choice.name}</option>
+                      <option
+                        key={choice.id}
+                        value={choice.id}
+                        disabled={combo.selection.includes(choice.id) && combo.selection[index] !== choice.id}
+                      >
+                        {choice.name}
+                      </option>
                     ))}
                   </NativeSelect>
                 </FormField>
               ))}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setCombo(null)}>Cancelar</Button>
-              <Button type="button" onClick={confirmCombo}>{combo.editingKey ? 'Guardar combo' : 'Agregar combo'}</Button>
+              <Button type='button' variant='outline' onClick={() => setCombo(null)}>Cancelar</Button>
+              <Button type='button' onClick={confirmCombo}>
+                {combo.editingKey ? 'Guardar combo' : 'Agregar combo'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
     </>
+  )
+}
+
+function CategoryTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type='button'
+      role='tab'
+      aria-selected={active}
+      onClick={onClick}
+      className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+        active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
