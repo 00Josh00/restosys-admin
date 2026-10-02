@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, UsersRound } from 'lucide-react'
+import { Plus, Trash2, UsersRound, Edit } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { OrderDialog } from './orders'
+import { OrderDialogSplit } from './OrderDialogSplit'
 import { useMenu } from './menu'
 import {
   errorMessage,
@@ -48,6 +48,24 @@ export function TablesPage() {
   const [open, setOpen] = useState(false)
   const [createOrderForTable, setCreateOrderForTable] =
     useState<RestaurantTable | null>(null)
+  const [editTable, setEditTable] = useState<RestaurantTable | null>(null)
+
+  const updateTable = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!editTable) return
+    const form = new FormData(event.currentTarget)
+    const { error } = await supabase
+      .from('restaurant_tables')
+      .update({
+        name: String(form.get('name')).trim(),
+        capacity: Number(form.get('capacity')),
+      })
+      .eq('id', editTable.id)
+    if (error) return toast.error(error.message)
+    toast.success('Mesa actualizada')
+    setEditTable(null)
+    await queryClient.invalidateQueries({ queryKey: ['restaurant-tables'] })
+  }
 
   const tablesQuery = useQuery({
     queryKey: ['restaurant-tables'],
@@ -232,6 +250,19 @@ export function TablesPage() {
                     <Button
                       variant='ghost'
                       size='icon'
+                      aria-label={`Editar ${table.name}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setEditTable(table)
+                      }}
+                    >
+                      <Edit className='size-4' />
+                    </Button>
+                  )}
+                  {role.data === 'admin' && (
+                    <Button
+                      variant='ghost'
+                      size='icon'
                       aria-label={`Eliminar ${table.name}`}
                       onClick={(e) => {
                         e.stopPropagation()
@@ -260,7 +291,7 @@ export function TablesPage() {
         </div>
       )}
       {createOrderForTable && (
-        <OrderDialog
+        <OrderDialogSplit
           key={createOrderForTable.id}
           open={Boolean(createOrderForTable)}
           onOpenChange={(open: boolean) =>
@@ -281,6 +312,43 @@ export function TablesPage() {
           }}
           initialTableId={createOrderForTable.id}
         />
+      )}
+      {editTable && (
+        <Dialog
+          open={Boolean(editTable)}
+          onOpenChange={(open: boolean) =>
+            !open && setEditTable(null)
+          }
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar mesa</DialogTitle>
+            </DialogHeader>
+            <form id='edit-table-form' onSubmit={updateTable} className='grid gap-4'>
+              <FormField label='Nombre'>
+                <TextInput name='name' required defaultValue={editTable.name} />
+              </FormField>
+              <FormField label='Capacidad'>
+                <TextInput
+                  name='capacity'
+                  type='number'
+                  min='1'
+                  max='30'
+                  defaultValue={editTable.capacity}
+                  required
+                />
+              </FormField>
+            </form>
+            <DialogFooter>
+              <Button type='button' variant='outline' onClick={() => setEditTable(null)}>
+                Cancelar
+              </Button>
+              <Button type='submit' form='edit-table-form'>
+                Guardar cambios
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </PageShell>
   )
