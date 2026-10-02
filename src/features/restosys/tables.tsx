@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, UsersRound, Edit } from 'lucide-react'
+import { Plus, Trash2, Edit } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,6 @@ import { useMenu } from './menu'
 import {
   errorMessage,
   FormField,
-  formatMoney,
   PageError,
   PageLoading,
   PageShell,
@@ -224,7 +223,7 @@ export function TablesPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+        <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2'>
           {tables.map((table) => {
             const order = orderByTable.get(table.id)
             const free = !order
@@ -238,51 +237,16 @@ export function TablesPage() {
                   }
                 }}
               >
-                <CardHeader className='flex flex-row items-start justify-between space-y-0 pb-3'>
-                  <div>
-                    <CardTitle className='text-lg'>{table.name}</CardTitle>
-                    <p className='mt-1 flex items-center gap-1 text-sm text-muted-foreground'>
-                      <UsersRound className='size-4' /> {table.capacity}{' '}
-                      personas
-                    </p>
-                  </div>
-                  {role.data === 'admin' && (
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      aria-label={`Editar ${table.name}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setEditTable(table)
-                      }}
-                    >
-                      <Edit className='size-4' />
-                    </Button>
-                  )}
-                  {role.data === 'admin' && (
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      aria-label={`Eliminar ${table.name}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        void removeTable(table)
-                      }}
-                    >
-                      <Trash2 className='size-4' />
-                    </Button>
-                  )}
-                </CardHeader>
-                <CardContent className='space-y-2'>
-                  <div
-                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${free ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-700 dark:text-rose-400'}`}
-                  >
+                <CardContent className='p-4 flex flex-col items-center text-center'>
+                  <CardTitle className='text-xl font-bold'>{table.name}</CardTitle>
+                  <div className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-medium ${free ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-700 dark:text-rose-400'}`}>
                     {free ? 'Libre' : 'Ocupada'}
                   </div>
-                  {order && (
-                    <p className='text-sm text-muted-foreground'>
-                      Pedido #{order.order_number} · {formatMoney(order.total)}
-                    </p>
+                  {role.data === 'admin' && (
+                    <div className='mt-3 flex gap-2'>
+                      <Button variant='ghost' size='icon' aria-label={`Editar ${table.name}`} onClick={(e) => { e.stopPropagation(); setEditTable(table) }}><Edit className='size-4' /></Button>
+                      <Button variant='ghost' size='icon' aria-label={`Eliminar ${table.name}`} onClick={(e) => { e.stopPropagation(); void removeTable(table) }}><Trash2 className='size-4' /></Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
