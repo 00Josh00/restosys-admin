@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import {
   Sheet,
   SheetContent,
@@ -207,11 +207,12 @@ export function OrderDialogSplit({
   const confirmCombo = () => {
     if (!combo) return
     const slots = combo.product.combo_slots ?? 2
-    if (combo.selection.length !== slots || new Set(combo.selection).size !== slots) {
+    const chosen = combo.selection.filter(Boolean)
+    if (chosen.length !== slots || new Set(chosen).size !== slots) {
       toast.error(`Elige ${slots} platos distintos para el combo.`)
       return
     }
-    const components = combo.selection
+    const components = chosen
       .map((id) => availableProducts.find((p: MenuProduct) => p.id === id))
       .filter((p): p is MenuProduct => Boolean(p))
     if (components.length !== slots) {
@@ -344,88 +345,176 @@ export function OrderDialogSplit({
               </div>
             )}
 
-            <div className='space-y-2 border-b px-4 py-3'>
-              <div className='relative'>
-                <Search className='absolute inset-s-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
-                <input
-                  type='search'
-                  placeholder='Buscar producto…'
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className='h-11 w-full rounded-md border border-input bg-background pl-10 pr-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                />
-              </div>
-              <div className='flex gap-1.5 overflow-x-auto pb-0.5' role='tablist'>
-                <CategoryTab active={activeCategory === 'Todos'} onClick={() => setActiveCategory('Todos')}>
-                  <Search className='size-3.5' /> Todos
-                </CategoryTab>
-                {categories.slice(1).map((cat) => {
-                  const Icon = getCategoryIcon(cat)
-                  return (
-                    <CategoryTab key={cat} active={activeCategory === cat} onClick={() => setActiveCategory(cat)}>
-                      <Icon className='size-3.5' /> {cat}
-                    </CategoryTab>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className='flex-1 overflow-y-auto px-4 py-3'>
-              {filteredProducts.length === 0 ? (
-                <div className='flex h-full flex-col items-center justify-center py-10 text-muted-foreground'>
-                  <Search className='mb-2 size-10 opacity-50' />
-                  <p className='text-sm'>No hay productos en esta categoría</p>
+            {combo ? (
+              <div className='flex-1 overflow-y-auto px-4 py-3'>
+                <div className='mb-4'>
+                  <h3 className='text-base font-semibold'>
+                    {combo.product.combo_slots === 3 ? 'Arma tu trío' : 'Arma tu dúo'} · {combo.product.name}
+                  </h3>
+                  <p className='text-sm text-muted-foreground'>
+                    {formatMoney(combo.product.price)} · elige {combo.product.combo_slots ?? 2} platos
+                  </p>
                 </div>
-              ) : (
-                <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
-                  {filteredProducts.map((product: MenuProduct) => {
-                    const qty = quantityByProduct.get(product.id) ?? 0
+                <div className='grid gap-4'>
+                  {Array.from({ length: combo.product.combo_slots ?? 2 }).map((_, index) => {
+                    const chosen = combo.selection[index]
+                    const options = comboChoices.get(combo.product.id) ?? []
                     return (
-                      <button
-                        key={product.id}
-                        type='button'
-                        onClick={() => addToCart(product)}
-                        className='relative flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-left transition-all hover:border-primary/50 hover:bg-accent/50 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none min-h-[56px]'
-                      >
-                        <div className='min-w-0 flex-1'>
-                          <div className='flex items-center gap-2'>
-                            <h4 className='truncate text-sm font-medium'>{product.name}</h4>
-                            {product.is_combo && (
-                              <span className='inline-flex shrink-0 items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary'>
-                                <Package className='size-2.5' /> {product.combo_slots === 3 ? 'Trío' : 'Dúo'}
-                              </span>
-                            )}
+                      <div key={index} className='rounded-lg border p-3'>
+                        <p className='mb-2 text-sm font-medium'>Plato {index + 1}</p>
+                        {!chosen ? (
+                          <div className='grid max-h-56 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3'>
+                            {options.map((choice) => {
+                              const usedElsewhere = combo.selection.some((s, i) => s === choice.id && i !== index)
+                              return (
+                                <button
+                                  key={choice.id}
+                                  type='button'
+                                  disabled={usedElsewhere}
+                                  onClick={() =>
+                                    setCombo((cur) => {
+                                      if (!cur) return cur
+                                      const s = [...cur.selection]
+                                      s[index] = choice.id
+                                      return { ...cur, selection: s }
+                                    })
+                                  }
+                                  className='rounded-md border border-border bg-card p-2 text-left text-sm transition-colors hover:border-primary/50 hover:bg-accent/50 disabled:opacity-40 min-h-[44px]'
+                                >
+                                  {choice.name}
+                                </button>
+                              )
+                            })}
                           </div>
-                          <span className='text-sm font-semibold text-primary'>{formatMoney(product.price)}</span>
-                        </div>
-                        <div className='relative flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
-                          <Plus className='size-4' />
-                          {qty > 0 && (
-                            <span className='absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground'>
-                              {qty}
+                        ) : (
+                          <div className='flex items-center justify-between gap-2'>
+                            <span className='truncate text-sm'>
+                              {options.find((o) => o.id === chosen)?.name ?? 'Plato'}
                             </span>
-                          )}
-                        </div>
-                      </button>
+                            <Button
+                              type='button'
+                              size='sm'
+                              variant='outline'
+                              onClick={() =>
+                                setCombo((cur) => {
+                                  if (!cur) return cur
+                                  const s = [...cur.selection]
+                                  s[index] = ''
+                                  return { ...cur, selection: s }
+                                })
+                              }
+                            >
+                              Cambiar
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     )
                   })}
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <>
+                <div className='space-y-2 border-b px-4 py-3'>
+                  <div className='relative'>
+                    <Search className='absolute inset-s-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
+                    <input
+                      type='search'
+                      placeholder='Buscar producto…'
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className='h-11 w-full rounded-md border border-input bg-background pl-10 pr-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                    />
+                  </div>
+                  <div className='flex gap-1.5 overflow-x-auto pb-0.5' role='tablist'>
+                    <CategoryTab active={activeCategory === 'Todos'} onClick={() => setActiveCategory('Todos')}>
+                      <Search className='size-3.5' /> Todos
+                    </CategoryTab>
+                    {categories.slice(1).map((cat) => {
+                      const Icon = getCategoryIcon(cat)
+                      return (
+                        <CategoryTab key={cat} active={activeCategory === cat} onClick={() => setActiveCategory(cat)}>
+                          <Icon className='size-3.5' /> {cat}
+                        </CategoryTab>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className='flex-1 overflow-y-auto px-4 py-3'>
+                  {filteredProducts.length === 0 ? (
+                    <div className='flex h-full flex-col items-center justify-center py-10 text-muted-foreground'>
+                      <Search className='mb-2 size-10 opacity-50' />
+                      <p className='text-sm'>No hay productos en esta categoría</p>
+                    </div>
+                  ) : (
+                    <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
+                      {filteredProducts.map((product: MenuProduct) => {
+                        const qty = quantityByProduct.get(product.id) ?? 0
+                        return (
+                          <button
+                            key={product.id}
+                            type='button'
+                            onClick={() => addToCart(product)}
+                            className='relative flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-left transition-all hover:border-primary/50 hover:bg-accent/50 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none min-h-[56px]'
+                          >
+                            <div className='min-w-0 flex-1'>
+                              <div className='flex items-center gap-2'>
+                                <h4 className='truncate text-sm font-medium'>{product.name}</h4>
+                                {product.is_combo && (
+                                  <span className='inline-flex shrink-0 items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary'>
+                                    <Package className='size-2.5' /> {product.combo_slots === 3 ? 'Trío' : 'Dúo'}
+                                  </span>
+                                )}
+                              </div>
+                              <span className='text-sm font-semibold text-primary'>{formatMoney(product.price)}</span>
+                            </div>
+                            <div className='relative flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
+                              <Plus className='size-4' />
+                              {qty > 0 && (
+                                <span className='absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground'>
+                                  {qty}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
             <div
               className='border-t px-4 py-3'
               style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
             >
-              <Button
-                type='button'
-                className='h-12 w-full text-base'
-                disabled={totalItems === 0}
-                onClick={() => setCartOpen(true)}
-              >
-                <ShoppingCart className='size-5' />
-                {totalItems > 0 ? `Ver pedido (${totalItems}) · ${formatMoney(subtotal)}` : 'Selecciona productos'}
-              </Button>
+              {combo ? (
+                <div className='flex gap-2'>
+                  <Button type='button' variant='outline' className='h-12' onClick={() => setCombo(null)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    type='button'
+                    className='h-12 flex-1 text-base'
+                    onClick={confirmCombo}
+                    disabled={combo.selection.filter(Boolean).length !== (combo.product.combo_slots ?? 2)}
+                  >
+                    {combo.editingKey ? 'Guardar combo' : 'Agregar combo'}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type='button'
+                  className='h-12 w-full text-base'
+                  disabled={totalItems === 0}
+                  onClick={() => setCartOpen(true)}
+                >
+                  <ShoppingCart className='size-5' />
+                  {totalItems > 0 ? `Ver pedido (${totalItems}) · ${formatMoney(subtotal)}` : 'Selecciona productos'}
+                </Button>
+              )}
             </div>
           </form>
         </DialogContent>
@@ -540,54 +629,6 @@ export function OrderDialogSplit({
         </SheetContent>
       </Sheet>
 
-      {combo && (
-        <Dialog open onOpenChange={(next) => !next && setCombo(null)}>
-          <DialogContent className='sm:max-w-md'>
-            <DialogHeader>
-              <DialogTitle>
-                {combo.product.combo_slots === 3 ? 'Arma tu trío' : 'Arma tu dúo'} · {combo.product.name}
-              </DialogTitle>
-            </DialogHeader>
-            <p className='text-sm text-muted-foreground'>
-              {formatMoney(combo.product.price)} · elige {combo.product.combo_slots ?? 2} platos
-            </p>
-            <div className='grid gap-3'>
-              {Array.from({ length: combo.product.combo_slots ?? 2 }).map((_, index) => (
-                <FormField key={index} label={`Plato ${index + 1}`}>
-                  <NativeSelect
-                    value={combo.selection[index] ?? ''}
-                    onChange={(e) =>
-                      setCombo((cur) => {
-                        if (!cur) return cur
-                        const s = [...cur.selection]
-                        s[index] = e.target.value
-                        return { ...cur, selection: s }
-                      })
-                    }
-                  >
-                    <option value=''>Elegir…</option>
-                    {(comboChoices.get(combo.product.id) ?? []).map((choice) => (
-                      <option
-                        key={choice.id}
-                        value={choice.id}
-                        disabled={combo.selection.includes(choice.id) && combo.selection[index] !== choice.id}
-                      >
-                        {choice.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </FormField>
-              ))}
-            </div>
-            <DialogFooter>
-              <Button type='button' variant='outline' onClick={() => setCombo(null)}>Cancelar</Button>
-              <Button type='button' onClick={confirmCombo}>
-                {combo.editingKey ? 'Guardar combo' : 'Agregar combo'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
     </>
   )
 }
