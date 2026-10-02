@@ -78,14 +78,30 @@ export function OrderDialogSplit({
     [menu.comboOptions, availableProducts]
   )
 
-  const categories = useMemo<string[]>(
-    () => ['Todos', ...Array.from(new Set(availableProducts.map((p: MenuProduct) => p.categories?.name).filter((c): c is string => Boolean(c))))],
-    [availableProducts]
-  )
+  const categories = useMemo<string[]>(() => {
+    const regularCats = Array.from(
+      new Set(
+        availableProducts
+          .filter((p: MenuProduct) => !p.is_combo)
+          .map((p: MenuProduct) => p.categories?.name)
+          .filter((c): c is string => Boolean(c))
+      )
+    ).sort()
+    const hasDuos = availableProducts.some((p: MenuProduct) => p.is_combo && p.combo_slots === 2)
+    const hasTrios = availableProducts.some((p: MenuProduct) => p.is_combo && p.combo_slots === 3)
+    const cats: string[] = ['Todos']
+    if (hasDuos) cats.push('Dúos')
+    if (hasTrios) cats.push('Tríos')
+    return [...cats, ...regularCats]
+  }, [availableProducts])
 
   const filteredProducts = useMemo<MenuProduct[]>(() => {
     let result = availableProducts
-    if (activeCategory !== 'Todos') {
+    if (activeCategory === 'Dúos') {
+      result = result.filter((p: MenuProduct) => p.is_combo && p.combo_slots === 2)
+    } else if (activeCategory === 'Tríos') {
+      result = result.filter((p: MenuProduct) => p.is_combo && p.combo_slots === 3)
+    } else if (activeCategory !== 'Todos') {
       result = result.filter((p: MenuProduct) => p.categories?.name === activeCategory)
     }
     if (searchQuery) {
@@ -230,6 +246,8 @@ export function OrderDialogSplit({
 
   const getCategoryIcon = (cat: string) => {
     const c = cat.toLowerCase()
+    if (c === 'dúos' || c === 'duos') return Package
+    if (c === 'tríos' || c === 'trios') return Package
     if (c.includes('plato') || c.includes('comida') || c.includes('principal')) return UtensilsCrossed
     if (c.includes('bebida') || c.includes('drink') || c.includes('jugo') || c.includes('gaseosa') || c.includes('cerveza') || c.includes('alcohol')) return Wine
     if (c.includes('cafe') || c.includes('café') || c.includes('infusion')) return Coffee
@@ -306,22 +324,20 @@ export function OrderDialogSplit({
                     <p>No hay productos en esta categoría</p>
                   </div>
                 ) : (
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  <div className="grid gap-2 sm:grid-cols-2">
                     {filteredProducts.map((product: MenuProduct) => (
-                      <button key={product.id} type="button" onClick={() => addToCart(product)} className="group relative flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/50 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none min-h-[56px]">
-                        <div className="flex-1 min-w-0 flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium text-sm truncate">{product.name}</h4>
-                            {product.is_combo && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
-                                <Package className="size-2.5" /> Combo
-                              </span>
-                            )}
-                          </div>
-                          <span className="font-semibold text-primary text-sm">{formatMoney(product.price)}</span>
+                      <button key={product.id} type="button" onClick={() => addToCart(product)} className="group relative flex items-center justify-between gap-2 p-2 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/50 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none min-h-[48px]">
+                        <div className="flex-1 min-w-0 flex items-center gap-2">
+                          <h4 className="font-medium text-sm truncate">{product.name}</h4>
+                          {product.is_combo && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
+                              <Package className="size-2.5" /> {product.combo_slots === 3 ? 'Trío' : 'Dúo'}
+                            </span>
+                          )}
+                          <span className="font-semibold text-primary text-sm ml-auto">{formatMoney(product.price)}</span>
                         </div>
-                        <div className="flex items-center justify-center size-10 rounded-full bg-primary/10 text-primary shrink-0">
-                          <Plus className="size-4" />
+                        <div className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary shrink-0">
+                          <Plus className="size-3.5" />
                         </div>
                       </button>
                     ))}
