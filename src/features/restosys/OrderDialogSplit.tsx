@@ -5,9 +5,8 @@ import { Minus, Plus, X, Search, UtensilsCrossed, Wine, Coffee, ChefHat, Package
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { FormField, TextInput, NativeSelect } from './shared'
+import { FormField, TextInput, NativeSelect, formatMoney, errorMessage } from './shared'
 import { supabase } from '@/lib/supabase'
-import { formatMoney, errorMessage } from './shared'
 import { type MenuProduct, type MenuData, type ComboOption } from './menu'
 
 type OrderStatus = 'pendiente' | 'preparacion' | 'listo' | 'entregado' | 'pagado' | 'cancelado'
@@ -25,6 +24,81 @@ type Order = {
 }
 type Table = { id: string; name: string; status: string }
 type CartLine = { key: string; product: MenuProduct; quantity: number; components: MenuProduct[] }
+
+interface CartSummaryProps {
+  lines: CartLine[]
+  subtotal: number
+  onClear: () => void
+  onUpdateQty: (key: string, delta: number) => void
+  onRemove: (key: string) => void
+  onEditCombo: (line: CartLine) => void
+  formatMoney: (value: number) => string
+}
+
+function CartSummary({
+  lines,
+  subtotal,
+  onClear,
+  onUpdateQty,
+  onRemove,
+  onEditCombo,
+  formatMoney,
+}: CartSummaryProps) {
+  if (lines.length === 0) {
+    return (
+      <div className="bg-muted/30 rounded-lg p-3 text-center text-sm text-muted-foreground">
+        <Package className="size-6 mx-auto mb-1 opacity-50" />
+        <p>El pedido está vacío</p>
+        <p className="text-xs">Selecciona productos abajo</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-lg p-3">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-semibold text-sm">Pedido ({lines.length})</h3>
+        <Button type="button" variant="ghost" size="icon" onClick={onClear} aria-label="Limpiar pedido" className="size-7">
+          <X className="size-4" />
+        </Button>
+      </div>
+      <div className="divide-y max-h-40 overflow-y-auto">
+        {lines.map((line) => (
+          <div key={line.key} className="py-2 flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                <span className="font-medium text-sm">{line.quantity}×</span>
+                <span className="font-medium text-sm truncate">{line.product.name}</span>
+                {line.product.is_combo && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
+                    <Package className="size-2.5" /> {line.product.combo_slots === 3 ? 'Trío' : 'Dúo'}
+                  </span>
+                )}
+              </div>
+              <span className="font-semibold text-sm whitespace-nowrap">{formatMoney(Number(line.product.price) * line.quantity)}</span>
+            </div>
+            {line.components.length > 0 && (
+              <p className="ml-6 text-xs text-muted-foreground">{line.components.map((c) => c.name).join(' + ')}</p>
+            )}
+            <div className="flex items-center gap-1 ml-6">
+              <Button type="button" size="icon" variant="outline" className="size-7" onClick={() => onUpdateQty(line.key, -1)} aria-label="Disminuir"><Minus className="size-3.5" /></Button>
+              <span className="w-7 text-center text-sm font-medium">{line.quantity}</span>
+              <Button type="button" size="icon" variant="outline" className="size-7" onClick={() => onUpdateQty(line.key, 1)} aria-label="Aumentar"><Plus className="size-3.5" /></Button>
+              <Button type="button" size="icon" variant="ghost" className="size-7 text-destructive hover:bg-destructive/10" onClick={() => onRemove(line.key)} aria-label="Eliminar"><Trash2 className="size-3.5" /></Button>
+              {line.product.is_combo && (
+                <Button type="button" size="icon" variant="ghost" className="size-7" onClick={() => onEditCombo(line)} aria-label="Modificar combo"><X className="size-3.5" /></Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 border-t pt-2 space-y-1">
+        <div className="flex justify-between text-sm"><span>Subtotal</span><span className="font-semibold">{formatMoney(subtotal)}</span></div>
+        <div className="flex justify-between text-base font-bold"><span>Total</span><span>{formatMoney(subtotal)}</span></div>
+      </div>
+    </div>
+  )
+}
 
 interface OrderDialogSplitProps {
   open: boolean
@@ -259,174 +333,120 @@ export function OrderDialogSplit({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90dvh] w-full max-w-5xl sm:max-w-6xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <DialogHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <DialogTitle className="text-lg">
-              {isAppend ? `Agregar platos · Pedido #${order?.order_number ?? ''}` : 'Crear pedido'}
-            </DialogTitle>
-            {!isAppend && !initialTableId && (
-              <div className="flex flex-wrap gap-2">
-                <FormField label="Tipo">
-                  <NativeSelect name="order_type" defaultValue="local" className="w-auto">
-                    <option value="local">🍽️ En local</option>
-                    <option value="llevar">📦 Para llevar</option>
-                    <option value="delivery">🚚 Delivery</option>
-                  </NativeSelect>
-                </FormField>
-                <FormField label="Mesa">
-                  <NativeSelect name="table_id" defaultValue="" className="w-auto min-w-[150px]">
-                    <option value="">Seleccionar mesa</option>
-                    {tables.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </NativeSelect>
-                </FormField>
-              </div>
-            )}
-            {initialTableId && (
-              <>
-                <input type="hidden" name="order_type" value="local" />
-                <input type="hidden" name="table_id" value={initialTableId} />
-              </>
-            )}
-          </DialogHeader>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 flex flex-col gap-3 min-h-0">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input
-                    type="search"
-                    placeholder="Buscar producto…"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-10 w-full pl-10 pr-4 rounded-md border border-input bg-background text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
+        <DialogContent className="max-h-[90dvh] w-full max-w-sm" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <form id="order-form" onSubmit={submit} className="flex flex-col gap-3 min-h-0 h-[calc(90dvh-3rem)]">
+            <DialogHeader className="flex flex-col gap-3">
+              <DialogTitle className="text-lg">
+                {isAppend ? `Agregar platos · Pedido #${order?.order_number ?? ''}` : 'Crear pedido'}
+              </DialogTitle>
+              {!isAppend && !initialTableId && (
+                <div className="grid grid-cols-2 gap-2">
+                  <FormField label="Tipo">
+                    <NativeSelect name="order_type" defaultValue="local">
+                      <option value="local">🍽️ En local</option>
+                      <option value="llevar">📦 Para llevar</option>
+                      <option value="delivery">🚚 Delivery</option>
+                    </NativeSelect>
+                  </FormField>
+                  <FormField label="Mesa">
+                    <NativeSelect name="table_id" defaultValue="">
+                      <option value="">Seleccionar</option>
+                      {tables.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </NativeSelect>
+                  </FormField>
                 </div>
-                <div className="flex gap-1 overflow-x-auto pb-1" role="tablist">
-                  <button role="tab" aria-selected={activeCategory === 'Todos'} onClick={() => setActiveCategory('Todos')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === 'Todos' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}>
-                    <Search className="size-3.5" /> Todos
-                  </button>
-                  {categories.slice(1).map((cat) => {
-                    const Icon = getCategoryIcon(cat)
-                    return (
-                      <button key={cat} role="tab" aria-selected={activeCategory === cat} onClick={() => setActiveCategory(cat)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}>
-                        <Icon className="size-3.5" /> {cat}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
+              )}
+              {initialTableId && (
+                <>
+                  <input type="hidden" name="order_type" value="local" />
+                  <input type="hidden" name="table_id" value={initialTableId} />
+                </>
+              )}
+            </DialogHeader>
 
-              <div className="flex-1 overflow-y-auto" style={{ maxHeight: '50vh' }}>
-                {filteredProducts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                    <Search className="size-12 mb-2 opacity-50" />
-                    <p>No hay productos en esta categoría</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {filteredProducts.map((product: MenuProduct) => (
-                      <button key={product.id} type="button" onClick={() => addToCart(product)} className="group relative flex items-center justify-between gap-2 p-2 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/50 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none min-h-[48px]">
-                        <div className="flex-1 min-w-0 flex items-center gap-2">
-                          <h4 className="font-medium text-sm truncate">{product.name}</h4>
-                          {product.is_combo && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
-                              <Package className="size-2.5" /> {product.combo_slots === 3 ? 'Trío' : 'Dúo'}
-                            </span>
-                          )}
-                          <span className="font-semibold text-primary text-sm ml-auto">{formatMoney(product.price)}</span>
-                        </div>
-                        <div className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary shrink-0">
-                          <Plus className="size-3.5" />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+            <CartSummary
+              lines={lines}
+              subtotal={subtotal}
+              onClear={() => setLines([])}
+              onUpdateQty={(key, delta) => setLines((c) => c.map((i) => i.key === key ? { ...i, quantity: Math.max(1, i.quantity + delta) } : i))}
+              onRemove={(key) => setLines((c) => c.filter((i) => i.key !== key))}
+              onEditCombo={(line) => setCombo({ product: line.product, editingKey: line.key, selection: line.components.map((c) => c.id) })}
+              formatMoney={formatMoney}
+            />
+
+            <div className="flex flex-col gap-2">
+              <div className="relative">
+                <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <input
+                  type="search"
+                  placeholder="Buscar producto…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-10 w-full pl-10 pr-4 rounded-md border border-input bg-background text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+              <div className="flex gap-1 overflow-x-auto pb-1" role="tablist">
+                <button type="button" role="tab" aria-selected={activeCategory === 'Todos'} onClick={() => setActiveCategory('Todos')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === 'Todos' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}>
+                  <Search className="size-3.5" /> Todos
+                </button>
+                {categories.slice(1).map((cat) => {
+                  const Icon = getCategoryIcon(cat)
+                  return (
+                    <button key={cat} type="button" role="tab" aria-selected={activeCategory === cat} onClick={() => setActiveCategory(cat)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}>
+                      <Icon className="size-3.5" /> {cat}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
-            <div className="lg:col-span-1 flex flex-col gap-3 border-l border-border pl-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Pedido</h3>
-                {lines.length > 0 && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => setLines([])} aria-label="Limpiar pedido">
-                    <X className="size-4" />
-                  </Button>
-                )}
-              </div>
-
-              {lines.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground border border-dashed rounded-lg p-6">
-                  <Package className="size-12 mb-2 opacity-30" />
-                  <p className="text-center">El pedido está vacío</p>
-                  <p className="text-xs text-center">Selecciona productos a la izquierda</p>
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {filteredProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
+                  <Search className="size-12 mb-2 opacity-50" />
+                  <p>No hay productos en esta categoría</p>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto">
-                  <div className="divide-y">
-                    {lines.map((line) => (
-                      <div key={line.key} className="py-3 flex flex-col gap-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <strong className="text-sm">{line.quantity}×</strong>
-                              <span className="font-medium text-sm truncate">{line.product.name}</span>
-                              {line.product.is_combo && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
-                                  <Package className="size-2.5" /> Combo
-                                </span>
-                              )}
-                            </div>
-                            {line.components.length > 0 && (
-                              <p className="mt-1 text-xs text-muted-foreground ml-6">{line.components.map((c) => c.name).join(' + ')}</p>
-                            )}
-                          </div>
-                          <span className="font-semibold text-sm whitespace-nowrap">{formatMoney(Number(line.product.price) * line.quantity)}</span>
-                        </div>
-                        <div className="flex items-center gap-1 ml-6">
-                          <Button type="button" size="icon" variant="outline" className="size-7" onClick={() => setLines((c) => c.map((i) => i.key === line.key ? { ...i, quantity: i.quantity - 1 } : i).filter((i) => i.quantity > 0))} aria-label="Disminuir"><Minus className="size-3.5" /></Button>
-                          <span className="w-8 text-center text-sm font-medium">{line.quantity}</span>
-                          <Button type="button" size="icon" variant="outline" className="size-7" onClick={() => setLines((c) => c.map((i) => i.key === line.key ? { ...i, quantity: i.quantity + 1 } : i))} aria-label="Aumentar"><Plus className="size-3.5" /></Button>
-                          <Button type="button" size="icon" variant="ghost" className="size-7 text-destructive hover:bg-destructive/10" onClick={() => setLines((c) => c.filter((i) => i.key !== line.key))} aria-label="Eliminar"><Trash2 className="size-3.5" /></Button>
-                          {line.product.is_combo && (
-                            <Button type="button" size="icon" variant="ghost" className="size-7" onClick={() => setCombo({ product: line.product, editingKey: line.key, selection: line.components.map((c) => c.id) })} aria-label="Modificar combo"><X className="size-3.5" /></Button>
-                          )}
-                        </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {filteredProducts.map((product: MenuProduct) => (
+                    <button key={product.id} type="button" onClick={() => addToCart(product)} className="group relative flex items-center justify-between gap-2 p-2 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/50 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none min-h-[48px]">
+                      <div className="flex-1 min-w-0 flex items-center gap-2">
+                        <h4 className="font-medium text-sm truncate">{product.name}</h4>
+                        {product.is_combo && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
+                            <Package className="size-2.5" /> {product.combo_slots === 3 ? 'Trío' : 'Dúo'}
+                          </span>
+                        )}
+                        <span className="font-semibold text-primary text-sm ml-auto whitespace-nowrap">{formatMoney(product.price)}</span>
                       </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 border-t pt-4 space-y-2">
-                    <div className="flex justify-between text-sm"><span>Subtotal</span><span className="font-semibold">{formatMoney(subtotal)}</span></div>
-                    <div className="flex justify-between text-base font-bold border-t pt-2"><span>Total</span><span>{formatMoney(subtotal)}</span></div>
-                  </div>
-                </div>
-              )}
-
-              {!isAppend && (
-                <div className="border-t pt-4">
-                  <FormField label="Cliente (opcional)"><TextInput name="customer_name" placeholder="Nombre del cliente" /></FormField>
-                  {!initialTableId && (
-                    <>
-                      <FormField label="Dirección de delivery"><TextInput name="delivery_address" placeholder="Dirección y referencia" /></FormField>
-                      <FormField label="Costo de delivery (S/)"><TextInput name="delivery_fee" type="number" min="0" step="0.5" defaultValue="0" /></FormField>
-                    </>
-                  )}
-                  <FormField label="Notas para cocina (opcional)"><TextInput name="notes" placeholder="Ej. sin ají, punto de cocción" /></FormField>
+                      <div className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary shrink-0">
+                        <Plus className="size-3.5" />
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-          </div>
 
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 w-full">
-            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" form="order-form" disabled={!canSubmit} className="w-full sm:w-auto">
-              {saving ? 'Guardando…' : isAppend ? 'Agregar platos' : 'Enviar a cocina'}
-            </Button>
-          </DialogFooter>
+            {!isAppend && !initialTableId && (
+              <div className="grid gap-2 border-t pt-3">
+                <FormField label="Cliente (opcional)"><TextInput name="customer_name" placeholder="Nombre del cliente" /></FormField>
+                <div className="grid grid-cols-2 gap-2">
+                  <FormField label="Dirección delivery"><TextInput name="delivery_address" placeholder="Dirección" /></FormField>
+                  <FormField label="Costo delivery (S/)"><TextInput name="delivery_fee" type="number" min="0" step="0.5" defaultValue="0" /></FormField>
+                </div>
+              </div>
+            )}
+            {!isAppend && (
+              <FormField label="Notas para cocina (opcional)"><TextInput name="notes" placeholder="Ej. sin ají" /></FormField>
+            )}
 
-          <form id="order-form" onSubmit={submit} className="hidden">
-            {initialTableId && (<> <input type="hidden" name="order_type" value="local" /> <input type="hidden" name="table_id" value={initialTableId} /> </>)}
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 w-full pt-1">
+              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button type="submit" disabled={!canSubmit} className="w-full sm:w-auto">
+                {saving ? 'Guardando…' : isAppend ? 'Agregar platos' : 'Enviar a cocina'}
+              </Button>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
